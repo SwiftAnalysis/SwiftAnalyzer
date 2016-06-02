@@ -29,7 +29,7 @@ public class SwiftAnalyzer {
     private static Analyzer analyzer = new EmptyCatchBlockCounter();
 
     /**
-     * swiftanalysis.SwiftAnalyzer method accepts one or more project paths to analyze.
+     * Main method accepts one or more project paths to analyze.
      *
      * @param args array of project paths
      */
@@ -46,39 +46,6 @@ public class SwiftAnalyzer {
             analyzer.analyzeProject(directory, treeStream);
         }
         analyzer.allProjectsDone();
-    }
-
-    private static void analyzeFile(File file) throws IOException {
-        System.out.println("Analyzing " + file.getAbsolutePath());
-        CharStream input = new ANTLRInputStream(new FileReader(file));
-        SwiftLexer lexer = new SwiftLexer(input);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        SwiftParser parser = new SwiftParser(tokens);
-        SwiftParser.TopLevelContext tree = parser.topLevel();
-
-//        System.out.println(tree.toStringTree(parser));
-
-
-//        JFrame frame = new JFrame("Antlr swiftanalysis.AST");
-//        JPanel panel = new JPanel();
-//        TreeViewer viewr = new TreeViewer(Arrays.asList(
-//                parser.getRuleNames()),tree);
-//        panel.add(viewr);
-//        frame.add(panel);
-//        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-//        frame.setSize(800,600);
-//        frame.setVisible(true);
-
-
-//        ParseTreeWalker.DEFAULT.walk(createListener(), tree);
-
-        String xpath = "//*"; // get children of blockStatement
-        String treePattern = "catch { }";
-        ParseTreePattern p =
-                parser.compileParseTreePattern(treePattern,
-                        SwiftParser.RULE_catchClause);
-        List<ParseTreeMatch> matches = p.findAll(tree, xpath);
-        System.out.println(matches);
     }
 
 }

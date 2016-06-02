@@ -6,11 +6,20 @@ import java.io.File;
 import java.util.stream.Stream;
 
 /**
- * Analyzes a project
+ * Execute a certain kind of analysis on projects.
  */
 public interface Analyzer {
 
+    /**
+     * Called for each project. Implement this to analyze the project ASTs.
+     *
+     * @param projectPath project directory
+     * @param treeStream stream of ASTs
+     */
     void analyzeProject(File projectPath, Stream<AST> treeStream);
 
+    /**
+     * Called when all projects are analyzed.
+     */
     void allProjectsDone();
 }
