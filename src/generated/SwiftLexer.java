@@ -1,4 +1,7 @@
 // Generated from Swift.g4 by ANTLR 4.5
+
+package generated;
+
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;

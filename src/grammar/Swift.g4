@@ -31,6 +31,10 @@
  */
 grammar Swift;
 
+@header {
+package generated;
+}
+
 topLevel : statements? EOF ;
 
 // Statements
