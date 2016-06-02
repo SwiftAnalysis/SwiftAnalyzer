@@ -32,7 +32,7 @@
 grammar Swift;
 
 @header {
-package generated;
+package swiftanalysis.generated;
 }
 
 topLevel : statements? EOF ;

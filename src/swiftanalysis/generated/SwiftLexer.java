@@ -1,6 +1,6 @@
 // Generated from Swift.g4 by ANTLR 4.5
 
-package generated;
+package swiftanalysis.generated;
 
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;

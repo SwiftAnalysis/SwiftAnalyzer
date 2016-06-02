@@ -1,7 +1,7 @@
-package listeners;
+package swiftanalysis.listeners;
 
-import generated.SwiftBaseListener;
-import generated.SwiftParser;
+import swiftanalysis.generated.SwiftBaseListener;
+import swiftanalysis.generated.SwiftParser;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.HashMap;
