@@ -4,6 +4,7 @@ import listeners.MscrMetricsListener;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 
 import java.io.File;
@@ -19,14 +20,21 @@ public class Main {
             System.err.println("Specify a project path");
             return;
         }
+        String projectPath = args[0];
+        analyzeProject(projectPath);
+        MscrMetricsListener.printSummary();
+    }
 
+    private static ParseTreeListener createListener() {
+        return new MscrMetricsListener();
+    }
+
+    private static void analyzeProject(String projectPath) throws IOException {
         List<File> files = new ArrayList<File>(){};
-        addSwiftFiles(new File(args[0]), files);
+        addSwiftFiles(new File(projectPath), files);
         for (File file : files) {
             analyzeFile(file);
         }
-
-        MscrMetricsListener.printSummary();
     }
 
     private static void analyzeFile(File file) throws IOException {
@@ -36,7 +44,7 @@ public class Main {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         SwiftParser parser = new SwiftParser(tokens);
         SwiftParser.TopLevelContext tree = parser.topLevel();
-        ParseTreeWalker.DEFAULT.walk(new MscrMetricsListener(), tree);
+        ParseTreeWalker.DEFAULT.walk(createListener(), tree);
     }
 
     // recursively add .swift files to fileCollection
