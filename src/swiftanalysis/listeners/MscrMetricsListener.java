@@ -2,6 +2,8 @@ package swiftanalysis.listeners;
 
 import swiftanalysis.generated.SwiftBaseListener;
 import swiftanalysis.generated.SwiftParser;
+import swiftanalysis.generated.SwiftParser.ConditionClauseContext;
+
 import org.antlr.v4.runtime.tree.ParseTree;
 
 import java.util.HashMap;
@@ -9,13 +11,15 @@ import java.util.Map;
 
 
 /**
- * Parse tree listener for lower camel case checks.
+ * Collects basic metrics.
  */
 public class MscrMetricsListener extends SwiftBaseListener {
 
 	private static int ifCounter = 0;
+	private static int ifWithNilCheckCounter = 0;
 	private static int ifLetCounter = 0;
 	private static int guardCounter = 0;
+	private static int guardWithNilCheckCounter = 0;
 	private static int guardLetCounter = 0;
 	private static int nilCoalescingCounter = 0;
 	private static int equalsNilCounter = 0;
@@ -38,6 +42,10 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static Map<String, Integer> optionalTypeMap = new HashMap<String, Integer>();
 	private static Map<String, Integer> forcedTypeMap = new HashMap<String, Integer>();
 
+	public MscrMetricsListener() {
+		//empty constructor
+	}
+
 	@Override
 	public void enterTryOperator(SwiftParser.TryOperatorContext ctx) {
 
@@ -53,32 +61,40 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	}
 
 	@Override
-	public void enterConditionClause(SwiftParser.ConditionClauseContext ctx) {
-
-		if (ctx.getText().contains("==nil")) {
-			equalsNilCounter++;
-		} else if (ctx.getText().contains("!=nil")) {
-			equalsNilCounter++;
-		} else if (ctx.getText().contains("nil==")) {
-			equalsNilCounter++;
-		} else if (ctx.getText().contains("nil!=")) {
+	public void enterConditionClause(ConditionClauseContext ctx) {
+		
+		if (containsNilCheck(ctx)) {
 			equalsNilCounter++;
 		}
 	}
 
 	@Override public void enterIfStatement(SwiftParser.IfStatementContext ctx) { 
+		
 		ifCounter++;
 
-		if (ctx.conditionClause().getText().startsWith("let")) {
+		ConditionClauseContext conditionClause = ctx.conditionClause();
+		
+		if (conditionClause.getText().startsWith("let")) {
 			ifLetCounter++;
+		}
+		
+		if (containsNilCheck(conditionClause)){
+			ifWithNilCheckCounter++;
 		}
 	}
 
 	@Override public void enterGuardStatement(SwiftParser.GuardStatementContext ctx) { 
+		
 		guardCounter++;
 
-		if (ctx.conditionClause().getText().startsWith("let")) {
+		ConditionClauseContext conditionClause = ctx.conditionClause();
+		
+		if (conditionClause.getText().startsWith("let")) {
 			guardLetCounter++;
+		}
+		
+		if (containsNilCheck(conditionClause)){
+			guardWithNilCheckCounter++;
 		}
 	}
 	
@@ -90,7 +106,6 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		forcedUnwrappingsCounter++;
 	}
 
-	
 	@Override 
 	public void enterSType(SwiftParser.STypeContext ctx) { 
 
@@ -119,10 +134,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		ParseTree secondChild = ctx.getChild(1);
 
 		if (secondChild.getText().equals("!")) {
-			// Location exclamationLocation = ListenerUtil.getParseTreeStartLocation(secondChild);
 			forcedTypeCastingCounter++;
 		} else if (secondChild.getText().equals("?")) {
-			// Location exclamationLocation = ListenerUtil.getParseTreeStartLocation(secondChild);
 			optionalTypeCastingCounter++;
 		}
 	}
@@ -160,6 +173,24 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	}
 	
 	/**
+	 * Checks if a ConditionClause contains a nil check (==nil or != nil).
+	 * @param ctx The ConditionClauseContext to be checked.
+	 * @return True if the ConditionClause contains the nil check, False otherwise.
+	 */
+	private static boolean containsNilCheck (ConditionClauseContext ctx) {
+		
+		String conditionClauseText = ctx.getText();
+		
+		if (conditionClauseText.contains("==nil") || 
+			conditionClauseText.contains("!=nil") ||
+			conditionClauseText.contains("nil==") ||
+			conditionClauseText.contains("nil!=")) {
+			return true;
+		}
+		
+		return false;
+	}
+	/**
 	 * This method is used because, when adding a an Optional Type
 	 * or a ForcedType, a duplicate of the type is also added to 
 	 * the TypeMap array. 
@@ -193,9 +224,11 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 		System.out.println("If: "+ ifCounter); //OK
 		System.out.println("If Let: "+ ifLetCounter); //OK
-
+		System.out.println("If with null check: "+ ifWithNilCheckCounter); //OK
+		
 		System.out.println("Guard: "+ guardCounter); //OK
 		System.out.println("Guard Let: "+ guardLetCounter); //OK
+		System.out.println("Guard with null check: "+ guardWithNilCheckCounter); //OK
 
 		System.out.println("Optional Chaining: "+ optionalChainingCounter); //OK
 		System.out.println("Forced Unwrapping: "+ forcedUnwrappingsCounter); //OK

@@ -2,6 +2,7 @@ package swiftanalysis;
 
 import swiftanalysis.generated.SwiftLexer;
 import swiftanalysis.generated.SwiftParser;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -9,12 +10,16 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /**
  * Responsible for finding all Swift files in a project and generating parse trees.
  */
 class ProjectParser {
+
+	private static int numberOfFilesBeforeClearingCache = 20;
+    private static AtomicInteger numFiles = new AtomicInteger(0);
 
     /**
      * Parses all Swift files in the given project path.
@@ -44,6 +49,7 @@ class ProjectParser {
         SwiftLexer lexer = new SwiftLexer(input);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         SwiftParser parser = new SwiftParser(tokens);
+        clearDFACache(parser);
         return new AST(file, parser.topLevel(), parser);
     }
 
@@ -81,6 +87,19 @@ class ProjectParser {
             }
         } else {
             System.err.println(file.getAbsolutePath() + " is not a file nor a directory");
+        }
+    }
+    
+    /**
+     * Clears the DFA cache, reducing memory usage after specified number of files are parsed.
+     *
+     * @param parser current SwiftParser instance
+     */
+    private static void clearDFACache(SwiftParser parser) {
+        numFiles.incrementAndGet();
+        if (numFiles.compareAndSet(numberOfFilesBeforeClearingCache, 0)) {
+        	//System.out.println("cleared DFA");
+            parser.getInterpreter().clearDFA();
         }
     }
 

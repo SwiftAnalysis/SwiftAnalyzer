@@ -1,6 +1,5 @@
 package swiftanalysis.analyzers;
 
-import org.antlr.v4.runtime.tree.ParseTree;
 import swiftanalysis.AST;
 
 import java.io.File;
@@ -21,7 +20,7 @@ public abstract class ProjectAnalyzer implements Analyzer {
         System.out.println("#");
         System.out.println("# Project: " + projectPath.getAbsolutePath());
         System.out.println("#");
-        astStream.forEach(this::analyzeFile);
+        astStream.forEach(this::analyzeFile);   
     }
 
     /**
