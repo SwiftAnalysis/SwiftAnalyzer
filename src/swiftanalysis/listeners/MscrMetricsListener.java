@@ -42,6 +42,16 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static Map<String, Integer> optionalTypeMap = new HashMap<String, Integer>();
 	private static Map<String, Integer> forcedTypeMap = new HashMap<String, Integer>();
 
+	// This map holds the depth of the objects receiving an optional chaining call.
+	// e.g.: window? -> 0, window.view? -> 1, window.view.layer? -> 2
+	private static Map<String, Integer> optionalChainingObjectCallDepthMap = new HashMap<String, Integer>();
+	
+	// This map hold the amount of optional chaining calls before the actual call.
+	// e.g.: window? -> 0, window.view? -> 0, window.view?.layer? -> 1
+	private static Map<String, Integer> optionalChainingCallDepthMap = new HashMap<String, Integer>();
+	
+	
+	
 	public MscrMetricsListener() {
 		//empty constructor
 	}
@@ -99,7 +109,16 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	}
 	
 	@Override public void enterOptionalChainingExpression(SwiftParser.OptionalChainingExpressionContext ctx) {
+		
 		optionalChainingCounter++;
+		
+		String optionalChainingText = ctx.getText();
+		
+		int callDepth = countOccurrences(optionalChainingText,'.');
+		int chainingCallDepth = countOccurrences(optionalChainingText,'?') - 1;
+		
+		checkAndAdd(optionalChainingObjectCallDepthMap, Integer.toString(callDepth));
+		checkAndAdd(optionalChainingCallDepthMap, Integer.toString(chainingCallDepth));
 	}
 
 	@Override public void enterForcedValueExpression(SwiftParser.ForcedValueExpressionContext ctx) {
@@ -220,6 +239,16 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		return output;
 	}
 	
+	private static int countOccurrences(String input, char c)
+	{
+	    int count = 0;
+	    for (int i=0; i < input.length(); i++)
+	    {
+	        if (input.charAt(i) == c) { count++; }
+	    }
+	    return count;
+	}
+	
 	public static void printSummary() {
 
 		System.out.println("If: "+ ifCounter); //OK
@@ -231,6 +260,9 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Guard with null check: "+ guardWithNilCheckCounter); //OK
 
 		System.out.println("Optional Chaining: "+ optionalChainingCounter); //OK
+		System.out.println("Optional Chaining Object Depth: "+ optionalChainingObjectCallDepthMap.toString()); //OK
+		System.out.println("Optional Chaining Call Depth: "+ optionalChainingCallDepthMap.toString()); //OK
+		
 		System.out.println("Forced Unwrapping: "+ forcedUnwrappingsCounter); //OK
 		System.out.println("== nil, != nil: "+ equalsNilCounter); //OK
 		System.out.println("??: "+ nilCoalescingCounter); //OK
