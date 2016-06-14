@@ -2,6 +2,10 @@ package swiftanalysis;
 
 import swiftanalysis.analyzers.Analyzer;
 import swiftanalysis.analyzers.EmptyCatchBlockCounter;
+import swiftanalysis.analyzers.MscrMetricsProjectAnalyzer;
+import swiftanalysis.output.Formatter;
+import swiftanalysis.output.JSONFormatter;
+import swiftanalysis.output.Printer;
 
 import java.io.File;
 import java.util.stream.Stream;
@@ -14,8 +18,12 @@ public class SwiftAnalyzer {
     /**
      * Analyzer of choice to analyze the project(s)
      */
-    private static Analyzer analyzer = new EmptyCatchBlockCounter();
-    //private static Analyzer analyzer = new MscrMetricsProjectAnalyzer();
+	
+    private static Formatter formatter = new JSONFormatter();
+    private static Printer printer = new Printer(formatter);
+    
+    //private static Analyzer analyzer = new EmptyCatchBlockCounter();
+    private static Analyzer analyzer = new MscrMetricsProjectAnalyzer(printer);
     
     /**
      * Main method accepts one or more project paths to analyze.
@@ -29,6 +37,7 @@ public class SwiftAnalyzer {
         }
 
         ProjectParser parser = new ProjectParser();
+        
         for (String projectPath : args) {
             File directory = new File(projectPath);
             Stream<AST> treeStream = parser.parseProject(directory);

@@ -1,9 +1,12 @@
 package swiftanalysis.listeners;
 
+import swiftanalysis.analyzers.util.ListenerUtil;
 import swiftanalysis.generated.SwiftBaseListener;
 import swiftanalysis.generated.SwiftParser;
 import swiftanalysis.generated.SwiftParser.ConditionClauseContext;
 import swiftanalysis.generated.SwiftParser.PatternInitializerContext;
+import swiftanalysis.output.MetricType;
+import swiftanalysis.output.Printer;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
@@ -19,6 +22,8 @@ import java.util.Map;
  */
 public class MscrMetricsListener extends SwiftBaseListener {
 
+	private Printer printer;
+	
 	private static int ifCounter = 0;
 	private static int ifWithNilCheckCounter = 0;
 	private static int ifLetCounter = 0;
@@ -61,8 +66,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 
 
-	public MscrMetricsListener() {
-		//empty constructor
+	public MscrMetricsListener(Printer printer) {
+		this.printer = printer;
 	}
 
 	@Override
@@ -72,10 +77,13 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 		if (tryText.equals("try")) {
 			tryCounter++;
+			printer.addToPrinting(MetricType.TRY, ListenerUtil.getContextStartLocation(ctx), "");
 		} else if (tryText.equals("try!")) {
 			forcedTryCounter++;
+			printer.addToPrinting(MetricType.FORCED_TRY, ListenerUtil.getContextStartLocation(ctx), "");
 		} else if (tryText.equals("try?")) {
 			optionalTryCounter++;
+			printer.addToPrinting(MetricType.OPTIONAL_TRY, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 	}
 
@@ -84,43 +92,51 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 		if (containsNilCheck(ctx)) {
 			equalsNilCounter++;
+			printer.addToPrinting(MetricType.EQUALS_NIL, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 	}
 
 	@Override public void enterIfStatement(SwiftParser.IfStatementContext ctx) { 
 
 		ifCounter++;
-
+		printer.addToPrinting(MetricType.IF, ListenerUtil.getContextStartLocation(ctx), "");
+		
 		ConditionClauseContext conditionClause = ctx.conditionClause();
 
 		if (conditionClause.getText().startsWith("let")) {
 			ifLetCounter++;
+			printer.addToPrinting(MetricType.IF_LET, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 
 		if (containsNilCheck(conditionClause)){
 			ifWithNilCheckCounter++;
+			printer.addToPrinting(MetricType.IF_WITH_NIL_CHECK, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 	}
 
 	@Override public void enterGuardStatement(SwiftParser.GuardStatementContext ctx) { 
 
 		guardCounter++;
-
+		printer.addToPrinting(MetricType.GUARD, ListenerUtil.getContextStartLocation(ctx), "");
+		
 		ConditionClauseContext conditionClause = ctx.conditionClause();
 
 		if (conditionClause.getText().startsWith("let")) {
 			guardLetCounter++;
+			printer.addToPrinting(MetricType.GUARD_LET, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 
 		if (containsNilCheck(conditionClause)){
 			guardWithNilCheckCounter++;
+			printer.addToPrinting(MetricType.GUARD_WITH_NIL_CHECK, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 	}
 
 	@Override public void enterOptionalChainingExpression(SwiftParser.OptionalChainingExpressionContext ctx) {
 
 		optionalChainingCounter++;
-
+		printer.addToPrinting(MetricType.OPTIONAL_CHAINING, ListenerUtil.getContextStartLocation(ctx), "");
+		
 		String optionalChainingText = ctx.getText();
 
 		int callDepth = countOccurrences(optionalChainingText,'.');
@@ -132,6 +148,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 	@Override public void enterForcedValueExpression(SwiftParser.ForcedValueExpressionContext ctx) {
 		forcedUnwrappingsCounter++;
+		printer.addToPrinting(MetricType.FORCED_UNWRAPPING, ListenerUtil.getContextStartLocation(ctx), "");
 	}
 
 	@Override 
@@ -147,8 +164,10 @@ public class MscrMetricsListener extends SwiftBaseListener {
 				checkAndAdd(optionalTypeMap, type);
 			} else if (secondChild.getText().equals("throws")) {
 				throwsCounter++;
+				printer.addToPrinting(MetricType.THROWS, ListenerUtil.getContextStartLocation(ctx), "");
 			} else if (secondChild.getText().equals("rethrows")) {
 				rethrowsCounter++;
+				printer.addToPrinting(MetricType.RETHROWS, ListenerUtil.getContextStartLocation(ctx), "");
 			}
 
 		} else {
@@ -163,8 +182,10 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 		if (secondChild.getText().equals("!")) {
 			forcedTypeCastingCounter++;
+			printer.addToPrinting(MetricType.FORCED_TYPE_CASTING, ListenerUtil.getContextStartLocation(ctx), "");
 		} else if (secondChild.getText().equals("?")) {
 			optionalTypeCastingCounter++;
+			printer.addToPrinting(MetricType.OPTIONAL_TYPE_CASTING, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 	}
 
@@ -172,22 +193,26 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	public void enterOperator(SwiftParser.OperatorContext ctx) {
 		if (ctx.getText().equals("??")) {
 			nilCoalescingCounter++;
+			printer.addToPrinting(MetricType.NIL_COALESCING, ListenerUtil.getContextStartLocation(ctx), "");
 		}
 	}
 
 	@Override 
 	public void enterDoStatement(SwiftParser.DoStatementContext ctx) {
 		doBlockCounter++;
+		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "");
 	}
 
 	@Override 
 	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
 		catchCounter++;
+		printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), "");
 	}
 
 	@Override 
 	public void enterThrowStatement(SwiftParser.ThrowStatementContext ctx) {
 		throwCounter++;
+		printer.addToPrinting(MetricType.THROW, ListenerUtil.getContextStartLocation(ctx), "");
 	}
 
 	@Override 

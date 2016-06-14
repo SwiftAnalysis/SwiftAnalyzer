@@ -30,6 +30,9 @@ public class ListeningAnalyzer extends ProjectAnalyzer {
      */
     @Override
     protected void analyzeFile(AST ast) {
+    	
+        if (printer != null) { printer.setInputFile(ast.getFile()); }
+        
         ParseTreeWalker.DEFAULT.walk(listener, ast.getTree());
     }
 }

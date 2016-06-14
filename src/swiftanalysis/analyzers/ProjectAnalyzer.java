@@ -1,6 +1,7 @@
 package swiftanalysis.analyzers;
 
 import swiftanalysis.AST;
+import swiftanalysis.output.Printer;
 
 import java.io.File;
 import java.util.stream.Stream;
@@ -10,6 +11,8 @@ import java.util.stream.Stream;
  */
 public abstract class ProjectAnalyzer implements Analyzer {
 
+	public Printer printer; 
+	
     /**
      * Calls analyzeFile for each file.
      *
@@ -34,5 +37,10 @@ public abstract class ProjectAnalyzer implements Analyzer {
      * Default empty implementation.
      */
     @Override
-    public void allProjectsDone() { }
+    public void allProjectsDone() { 
+    	if (printer != null) { 
+    		printer.printAllMessages();
+    		//printer.printToFile();
+    	}
+    }
 }
