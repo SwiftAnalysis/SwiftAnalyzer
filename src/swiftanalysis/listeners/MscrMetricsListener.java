@@ -139,7 +139,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 		String type = ctx.getText();
 
-		if (ctx.children.size() == 2) {
+		if (ctx.children != null && ctx.children.size() == 2) {
 			ParseTree secondChild = ctx.getChild(1);
 			if (secondChild.getText().equals("!")) {
 				checkAndAdd(forcedTypeMap, type);
