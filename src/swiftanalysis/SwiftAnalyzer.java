@@ -15,14 +15,14 @@ import java.util.stream.Stream;
  */
 public class SwiftAnalyzer {
 
+	 private static Formatter formatter = new JSONFormatter();
+	 private static Printer printer = new Printer(formatter);
+	    
     /**
      * Analyzer of choice to analyze the project(s)
      */
-	
-    private static Formatter formatter = new JSONFormatter();
-    private static Printer printer = new Printer(formatter);
-    
-    //private static Analyzer analyzer = new EmptyCatchBlockCounter();
+	 
+    //private static Analyzer analyzer = new EmptyCatchBlockCounter(printer);
     private static Analyzer analyzer = new MscrMetricsProjectAnalyzer(printer);
     
     /**

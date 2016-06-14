@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.tree.pattern.ParseTreeMatch;
 import swiftanalysis.AST;
 import swiftanalysis.analyzers.util.PatternMatching;
 import swiftanalysis.generated.SwiftParser;
+import swiftanalysis.output.Printer;
 
 import java.io.File;
 import java.util.List;
@@ -19,6 +20,10 @@ public class EmptyCatchBlockCounter extends ProjectAnalyzer {
      */
     private int emptyCatchBlocks;
 
+    public EmptyCatchBlockCounter(Printer printer) {
+    	super(printer);
+    }
+    
     @Override
     public void analyzeProject(File projectPath, Stream<AST> astStream) {
         emptyCatchBlocks = 0;

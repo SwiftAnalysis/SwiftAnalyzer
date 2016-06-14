@@ -14,8 +14,7 @@ public class MscrMetricsProjectAnalyzer extends ListeningAnalyzer {
      * Creates a ListeningAnalyzer with Marcel's MscrMetricsListener.
      */
     public MscrMetricsProjectAnalyzer(Printer printer) {
-        super(new MscrMetricsListener(printer));
-    	super.printer = printer;
+        super(new MscrMetricsListener(printer), printer);
     }
 
     /**

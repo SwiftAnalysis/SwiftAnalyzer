@@ -3,6 +3,7 @@ package swiftanalysis.analyzers;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import swiftanalysis.AST;
+import swiftanalysis.output.Printer;
 
 /**
  * Analyzer that can be given a ParseTreeListener to analyze projects.
@@ -19,7 +20,8 @@ public class ListeningAnalyzer extends ProjectAnalyzer {
      *
      * @param listener the parse tree listener
      */
-    public ListeningAnalyzer(ParseTreeListener listener) {
+    public ListeningAnalyzer(ParseTreeListener listener, Printer printer) {
+    	super(printer);
         this.listener = listener;
     }
 

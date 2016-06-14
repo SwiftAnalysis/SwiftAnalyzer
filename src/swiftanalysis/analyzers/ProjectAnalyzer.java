@@ -13,6 +13,9 @@ public abstract class ProjectAnalyzer implements Analyzer {
 
 	public Printer printer; 
 	
+	public ProjectAnalyzer(Printer printer) {
+		this.printer = printer;
+	}
     /**
      * Calls analyzeFile for each file.
      *
@@ -23,7 +26,11 @@ public abstract class ProjectAnalyzer implements Analyzer {
         System.out.println("#");
         System.out.println("# Project: " + projectPath.getAbsolutePath());
         System.out.println("#");
-        printer.setOutputFileDirectory(projectPath.getAbsolutePath());
+       
+        if (printer != null) { 
+        	printer.setOutputFileDirectory(projectPath.getAbsolutePath()); 
+        }
+     
         astStream.forEach(this::analyzeFile);   
     }
 
