@@ -2,6 +2,9 @@ package swiftanalysis.output;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -80,11 +83,23 @@ public final class Printer implements Comparable<Printer> {
 	 * @throws IOException if formatter cannot retrieve canonical path from inputFile
 	 */
 	public void printAllMessages() {
-		formatter.displayMetricMessages(msgBuffer);
+		String outputData = formatter.getFormattedMessages(msgBuffer);
+		System.out.println(outputData);
 	}
 	
     public void printToFile() {
-		formatter.printToFile(outputFileDirectory, outputFileName, msgBuffer);
+    	
+    	String outputData = formatter.getFormattedMessages(msgBuffer);
+    	String path = outputFileDirectory + File.separator + outputFileName + formatter.getExtension();
+    	
+    	Path file = Paths.get(path);
+    	
+    	try {
+			Files.write(file, outputData.getBytes());
+			System.out.println("Succesfully generated output file at "+path);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -119,5 +134,5 @@ public final class Printer implements Comparable<Printer> {
 		}
 		this.msgBuffer.add(metricMessage);
 	}
-	
+
 }

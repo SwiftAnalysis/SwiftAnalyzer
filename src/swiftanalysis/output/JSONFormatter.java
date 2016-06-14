@@ -6,7 +6,6 @@ import com.google.gson.GsonBuilder;
 import swiftanalysis.output.messages.Messages;
 import swiftanalysis.output.messages.MetricMessage;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,13 +24,15 @@ public final class JSONFormatter extends Formatter {
 	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
 	@Override
-	public void displayMetricMessages(List<MetricMessage> metricMessages) {
+	public String getFormattedMessages(List<MetricMessage> metricMessages) {
 		try {
 			Map<String, Object> messages = generateOutput(metricMessages);
-			System.out.println(GSON.toJson(messages));
+			return GSON.toJson(messages);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		return "";
 	}
 
 	private Map<String, Object> generateOutput(List<MetricMessage> metricMessages) throws IOException {
@@ -60,25 +61,4 @@ public final class JSONFormatter extends Formatter {
 		
 		return output;
 	}
-
-	@Override
-	public void printProgressInfo(String str) {
-		// Not Applicable to this formatter
-	}
-
-	@Override
-	public void printToFile(String outputDirectoryPath, String fileName, List<MetricMessage> metricMessages) {
-		try {
-			
-			Map<String, Object> messages = generateOutput(metricMessages);
-			String path = outputDirectoryPath + File.separator + fileName + this.extension;
-			
-			super.writeToFile(path, GSON.toJson(messages));
-			System.out.println("JSON file successfully generated at "+path);
-			
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 }
