@@ -10,6 +10,7 @@ import java.util.List;
 
 
 import swiftanalysis.common.Location;
+import swiftanalysis.output.messages.MessageInterface;
 import swiftanalysis.output.messages.MetricMessage;
 
 /**
@@ -22,7 +23,7 @@ public final class Printer implements Comparable<Printer> {
 	private File inputFile;
 	private String outputFileDirectory;
 	private Formatter formatter;
-	private List<MetricMessage> msgBuffer = new ArrayList<>();
+	private List<MessageInterface> msgBuffer = new ArrayList<>();
 
 	/**
 	 * Constructs a printer for the specified input file, maximum severity, and color setting.
@@ -73,7 +74,7 @@ public final class Printer implements Comparable<Printer> {
 		print(type, location, message);
 	}
 
-	public List<MetricMessage> getMetricMessages() {
+	public List<MessageInterface> getMetricMessages() {
 		return msgBuffer;
 	}
 

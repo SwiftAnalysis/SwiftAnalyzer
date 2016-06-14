@@ -22,8 +22,8 @@ public class SwiftAnalyzer {
      * Analyzer of choice to analyze the project(s)
      */
 	 
-    private static Analyzer analyzer = new EmptyCatchBlockCounter(printer);
-    //private static Analyzer analyzer = new MscrMetricsProjectAnalyzer(printer);
+    //private static Analyzer analyzer = new EmptyCatchBlockCounter(printer);
+    private static Analyzer analyzer = new MscrMetricsProjectAnalyzer(printer);
     
     /**
      * Main method accepts one or more project paths to analyze.

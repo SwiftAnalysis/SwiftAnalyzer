@@ -1,11 +1,14 @@
 package swiftanalysis.output.messages;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import swiftanalysis.output.MetricType;
 
 /**
  * Note: this class has a natural ordering that is inconsistent with equals.
  */
-public class MetricMessage {
+public class MetricMessage implements MessageInterface {
 
     private String filePath = "";
     private MetricType type;
@@ -148,4 +151,21 @@ public class MetricMessage {
         return metricMessage;
     }
 
+    public Map<String, Object> toStringObjectMap() {
+    	
+    	Map<String, Object> metric = new HashMap<>();
+		Map<String, Integer> location = new HashMap<>();
+
+		location.put(Messages.KEY_LINE, lineNumber);
+		if (this.getColumnNumber() != 0) {
+			location.put(Messages.KEY_COLUMN, columnNumber);
+		}
+
+		metric.put(Messages.KEY_TYPE, type.getName());
+		metric.put(Messages.KEY_SOURCE_FILE, filePath);
+		metric.put(Messages.KEY_LOCATION, location);
+		metric.put(Messages.KEY_MESSAGE, metricMessage);
+		
+		return metric;
+    }
 }

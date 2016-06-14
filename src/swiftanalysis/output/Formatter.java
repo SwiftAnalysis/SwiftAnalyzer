@@ -2,7 +2,7 @@ package swiftanalysis.output;
 
 import java.util.List;
 
-import swiftanalysis.output.messages.MetricMessage;
+import swiftanalysis.output.messages.MessageInterface;
 
 /**
  * Formatter used to display violation messages.
@@ -24,6 +24,6 @@ public abstract class Formatter {
     	this.extension = extension;
     }
     
-    public abstract String getFormattedMessages(List<MetricMessage> metricMessages);
+    public abstract String getFormattedMessages(List<MessageInterface> metricMessages);
     
 }
