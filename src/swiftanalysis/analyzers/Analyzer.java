@@ -18,6 +18,9 @@ public interface Analyzer {
      */
     void analyzeProject(File projectPath, Stream<AST> treeStream);
 
+    
+    public void analyzeFile(AST ast);
+    
     /**
      * Called when all projects are analyzed.
      */

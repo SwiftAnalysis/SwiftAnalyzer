@@ -23,7 +23,7 @@ public class MscrMetricsProjectAnalyzer extends ListeningAnalyzer {
      * @param ast the AST, contains file name, tree, and parser
      */
     @Override
-    protected void analyzeFile(AST ast) {
+    public void analyzeFile(AST ast) {
        	super.analyzeFile(ast);
     }
     /**

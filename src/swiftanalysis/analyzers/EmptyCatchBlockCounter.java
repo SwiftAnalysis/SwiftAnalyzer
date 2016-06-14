@@ -37,7 +37,9 @@ public class EmptyCatchBlockCounter extends ProjectAnalyzer {
      * @param ast the AST, contains file name, tree, and parser
      */
     @Override
-    protected void analyzeFile(AST ast) {
+    public void analyzeFile(AST ast) {
+    	super.analyzeFile(ast);
+    	
         PatternMatching m = new PatternMatching(ast);
         List<ParseTreeMatch> matches = m.match("catch { }", SwiftParser.RULE_catchClause);
         emptyCatchBlocks += matches.size();

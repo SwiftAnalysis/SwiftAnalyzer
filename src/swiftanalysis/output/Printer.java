@@ -37,9 +37,8 @@ public final class Printer implements Comparable<Printer> {
 	}
 
 	/**
-	 * Constructs a printer for the specified input file, maximum severity, and color setting.
+	 * Constructs a printer with the specified formatter.
 	 *
-	 * @param inputFile The source file to verify
 	 * @param formatter Format to print in
 	 */
 	public Printer(Formatter formatter) {

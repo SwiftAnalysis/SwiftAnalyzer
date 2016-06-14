@@ -13,15 +13,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Formatter that displays violation messages in valid JSON output.
+ * Formatter that displays messages in a valid JSON output.
  */
 public final class JSONFormatter extends Formatter {
+
+	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
 	public JSONFormatter() {
 		super(".json");
 	}
-
-	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
 	@Override
 	public String getFormattedMessages(List<MessageInterface> metricMessages) {

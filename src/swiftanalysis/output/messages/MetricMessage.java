@@ -25,7 +25,6 @@ public class MetricMessage implements MessageInterface {
      * @param type             the type associated with the metric
      * @param lineNumber       the logical line number in the source file
      * @param columnNumber     the logical column number in the source file
-     * @param severity         the severity of the violation message
      * @param metricMessage    the description of the metric message
      */
     public MetricMessage(String filePath, MetricType type, int lineNumber, int columnNumber, String metricMessage) {
@@ -42,7 +41,6 @@ public class MetricMessage implements MessageInterface {
     * @param type             the type associated with the metric
     * @param lineNumber       the logical line number in the source file
     * @param columnNumber     the logical column number in the source file
-    * @param severity         the severity of the violation message
     * @param metricMessage    the description of the metric message
     */
    public MetricMessage(MetricType type, int lineNumber, int columnNumber, String metricMessage) {

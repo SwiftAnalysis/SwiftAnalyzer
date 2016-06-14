@@ -39,7 +39,9 @@ public abstract class ProjectAnalyzer implements Analyzer {
      *
      * @param ast the AST, contains file name, tree, and parser
      */
-    protected abstract void analyzeFile(AST ast);
+    public void analyzeFile(AST ast) {
+    	   if (printer != null) { printer.setInputFile(ast.getFile()); }
+    }
 
     /**
      * Default empty implementation.
