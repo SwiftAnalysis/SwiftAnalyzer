@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 import swiftanalysis.common.Location;
@@ -15,7 +14,10 @@ import swiftanalysis.output.messages.MetricMessage;
  */
 public final class Printer implements Comparable<Printer> {
 
+	private final String outputFileName = "SwiftAnalyzerOutput";
+	
 	private File inputFile;
+	private String outputFileDirectory;
 	private Formatter formatter;
 	private List<MetricMessage> msgBuffer = new ArrayList<>();
 
@@ -47,6 +49,15 @@ public final class Printer implements Comparable<Printer> {
 	public File getInputFile(){
 		return this.inputFile;
 	}
+	
+	public String getOutputFileDirectory() {
+		return outputFileDirectory;
+	}
+
+	public void setOutputFileDirectory(String outputFileDirectory) {
+		this.outputFileDirectory = outputFileDirectory;
+	}
+	
 	/**
 	 * Prints the message to the output source.
 	 *
@@ -73,7 +84,7 @@ public final class Printer implements Comparable<Printer> {
 	}
 	
     public void printToFile() {
-		formatter.printToFile(msgBuffer);
+		formatter.printToFile(outputFileDirectory, outputFileName, msgBuffer);
 	}
 
 	@Override
@@ -96,8 +107,8 @@ public final class Printer implements Comparable<Printer> {
 	}
 
 	public void print(MetricType type, Location location, String msg) {
-		MetricMessage violationMessage = new MetricMessage(type,location.line, location.column, msg);
-		addToMsgBuffer(violationMessage);
+		MetricMessage metricMessage = new MetricMessage(type,location.line, location.column, msg);
+		addToMsgBuffer(metricMessage);
 	}
 
 	private void addToMsgBuffer(MetricMessage metricMessage) {

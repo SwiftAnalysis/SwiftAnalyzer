@@ -6,6 +6,7 @@ import com.google.gson.GsonBuilder;
 import swiftanalysis.output.messages.Messages;
 import swiftanalysis.output.messages.MetricMessage;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,6 +17,10 @@ import java.util.Map;
  * Formatter that displays violation messages in valid JSON output.
  */
 public final class JSONFormatter extends Formatter {
+
+	public JSONFormatter() {
+		super(".json");
+	}
 
 	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
 
@@ -62,10 +67,15 @@ public final class JSONFormatter extends Formatter {
 	}
 
 	@Override
-	public void printToFile(List<MetricMessage> metricMessages) {
+	public void printToFile(String outputDirectoryPath, String fileName, List<MetricMessage> metricMessages) {
 		try {
+			
 			Map<String, Object> messages = generateOutput(metricMessages);
-			System.out.println(GSON.toJson(messages));
+			String path = outputDirectoryPath + File.separator + fileName + this.extension;
+			
+			super.writeToFile(path, GSON.toJson(messages));
+			System.out.println("JSON file successfully generated at "+path);
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

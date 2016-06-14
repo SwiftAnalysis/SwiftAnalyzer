@@ -1,6 +1,9 @@
 package swiftanalysis.output;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import swiftanalysis.output.messages.MetricMessage;
@@ -11,7 +14,11 @@ import swiftanalysis.output.messages.MetricMessage;
  */
 public abstract class Formatter {
 
-    public Formatter() {}
+	String extension;
+	
+    public Formatter(String extension) {
+    	this.extension = extension;
+    }
 
     /**
      * Print all metric messages for a given file to the console.
@@ -27,7 +34,7 @@ public abstract class Formatter {
      * @param metricMessages list of metric messages to print
      * @throws IOException if canonical path could not be retrieved from the inputFile
      */
-     public abstract void printToFile(List<MetricMessage> metricMessages);
+     public abstract void printToFile(String outputDirectoryPath, String fileName, List<MetricMessage> metricMessages);
      
     /**
      * Print progress info to the console if the format allows.
@@ -36,6 +43,11 @@ public abstract class Formatter {
      */
     public void printProgressInfo(String str) {
         System.out.print(str);
+    }
+    
+    public void writeToFile(String path, String data) throws IOException {
+    	Path file = Paths.get(path);
+    	Files.write(file, data.getBytes());
     }
 
     

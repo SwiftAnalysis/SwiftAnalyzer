@@ -23,6 +23,7 @@ public abstract class ProjectAnalyzer implements Analyzer {
         System.out.println("#");
         System.out.println("# Project: " + projectPath.getAbsolutePath());
         System.out.println("#");
+        printer.setOutputFileDirectory(projectPath.getAbsolutePath());
         astStream.forEach(this::analyzeFile);   
     }
 
@@ -39,8 +40,8 @@ public abstract class ProjectAnalyzer implements Analyzer {
     @Override
     public void allProjectsDone() { 
     	if (printer != null) { 
-    		printer.printAllMessages();
-    		//printer.printToFile();
+    		//printer.printAllMessages();
+    		printer.printToFile();
     	}
     }
 }
