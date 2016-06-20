@@ -62,10 +62,12 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	// e.g.: window? -> 0, window.view? -> 1, window.view.layer? -> 2
 	private static Map<String, Integer> optionalChainingObjectCallDepthMap = new HashMap<String, Integer>();
 
-	// This map hold the amount of optional chaining calls before the actual call.
+	// This map holds the amount of optional chaining calls before the actual call.
 	// e.g.: window? -> 0, window.view? -> 0, window.view?.layer? -> 1
 	private static Map<String, Integer> optionalChainingCallDepthMap = new HashMap<String, Integer>();
 
+	// This map holds the amount catches present at a do block.
+	private static Map<String, Integer> doCatchBlocksMap = new HashMap<String, Integer>();
 
 
 	public MscrMetricsListener(Printer printer) {
@@ -196,6 +198,15 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	public void enterDoStatement(SwiftParser.DoStatementContext ctx) {
 		doBlockCounter++;
 		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "");
+		
+		//Grammar: doStatement: 'do' codeBlock catchClauses? ;
+		if (ctx.getChildCount() > 2) {
+			
+			String catchesStr = ctx.getChild(2).getText();
+			int numberOfCatches = countOccurrences(catchesStr, "catch");		
+			checkAndAdd(doCatchBlocksMap, Integer.toString(numberOfCatches));
+		}
+		
 	}
 
 	@Override 
@@ -362,6 +373,10 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		return output;
 	}
 
+	private static int countOccurrences (String str, String substring){
+		return (str.length() - str.replace(substring, "").length()) / substring.length();
+	}
+	
 	private static int countOccurrences(String input, char c)
 	{
 		int count = 0;
@@ -411,7 +426,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Implicit Constant Declarations: "+ implicitConstantDeclarationsCounter); //OK
 		System.out.println("Explicit Constant Declarations: "+ explicitConstantDeclarationsCounter); //OK
 
-		System.out.println("Do Blocks: "+ doBlockCounter); //OK
+		System.out.println("Do Blocks: "+ doBlockCounter +" Distribution: "+doCatchBlocksMap.toString()); //OK
 		System.out.println("Try: "+ tryCounter); //OK
 		System.out.println("Try?: "+ optionalTryCounter); //OK
 		System.out.println("Try!: "+ forcedTryCounter); //OK
