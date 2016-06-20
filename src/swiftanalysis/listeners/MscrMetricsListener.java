@@ -200,19 +200,21 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "");
 		
 		//Grammar: doStatement: 'do' codeBlock catchClauses? ;
-		if (ctx.getChildCount() > 2) {
 			
-			String catchesStr = ctx.getChild(2).getText();
-			int numberOfCatches = countOccurrences(catchesStr, "catch");		
-			checkAndAdd(doCatchBlocksMap, Integer.toString(numberOfCatches));
-		}
-		
+		String catchesStr = ctx.catchClauses().getText();
+		int numberOfCatches = countOccurrences(catchesStr, "catch");		
+		checkAndAdd(doCatchBlocksMap, Integer.toString(numberOfCatches));
 	}
 
 	@Override 
 	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
+		//grammar catchClause: 'catch' pattern? whereClause? codeBlock ;
+		
 		catchCounter++;
 		printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+	
+		//ctx.codeBlock().
+
 	}
 
 	@Override 
@@ -248,31 +250,27 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	}
 
 	@Override public void enterProtocolInitializerDeclaration(SwiftParser.ProtocolInitializerDeclarationContext ctx) {
-		checkForThrowsAndRethrows(ctx, null);
+		checkForThrowsAndRethrows(ctx);
 	}
 	
 	@Override public void enterInitializerDeclaration(SwiftParser.InitializerDeclarationContext ctx) {
-		
-		for (ParseTree child : ctx.children) {
-			if (!(child instanceof SwiftParser.InitializerBodyContext)){
-				if (!(child instanceof TerminalNodeImpl)) {
-					checkForThrowsAndRethrows((ParserRuleContext) child, null);
-				} else {
-					checkForThrowsAndRethrows(ctx, child);
-				}
-			}
-		}
+		checkForThrowsAndRethrows(ctx);
 	}
 	
 	@Override public void enterFunctionSignature(SwiftParser.FunctionSignatureContext ctx) {
-		checkForThrowsAndRethrows(ctx, null);
+		checkForThrowsAndRethrows(ctx);
 	}
 	
-	private void checkForThrowsAndRethrows(ParserRuleContext ctx, ParseTree tree) {
+	private void checkForThrowsAndRethrows(ParserRuleContext ctx) {
 		
-		String signature = tree == null ? ctx.getText() : tree.getText();
+		String signature = ctx.getText();
+		
+		if (ctx instanceof SwiftParser.InitializerDeclarationContext){
+			String body = ((SwiftParser.InitializerDeclarationContext) ctx).initializerBody().getText();
+			signature = signature.replace(body, "");
+		}
 
-		//System.out.println(signature);
+		System.out.println(signature);
 		
 		if (signature.contains("rethrows")) {
 			rethrowsCounter++;
