@@ -25,6 +25,7 @@ public class MscrMetricsProjectAnalyzer extends ListeningAnalyzer {
     @Override
     public void analyzeFile(AST ast) {
        	super.analyzeFile(ast);
+       	System.out.print(".");
     }
     /**
      * Prints the summary when all projects are analysed.

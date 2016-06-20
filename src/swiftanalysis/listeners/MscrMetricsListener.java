@@ -15,6 +15,8 @@ import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -155,21 +157,14 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	public void enterSType(SwiftParser.STypeContext ctx) { 
 
 		String type = ctx.getText();
-
-		if (ctx.children != null && ctx.children.size() == 2) {
+		
+		if (ctx.children != null && ctx.children.size() >= 2) {
 			ParseTree secondChild = ctx.getChild(1);
 			if (secondChild.getText().equals("!")) {
 				checkAndAdd(forcedTypeMap, type);
 			} else if (secondChild.getText().equals("?")) {
 				checkAndAdd(optionalTypeMap, type);
-			} else if (secondChild.getText().equals("throws")) {
-				throwsCounter++;
-				printer.addToPrinting(MetricType.THROWS, ListenerUtil.getContextStartLocation(ctx), "");
-			} else if (secondChild.getText().equals("rethrows")) {
-				rethrowsCounter++;
-				printer.addToPrinting(MetricType.RETHROWS, ListenerUtil.getContextStartLocation(ctx), "");
-			}
-
+			} 
 		} else {
 			checkAndAdd(typeMap, type);
 		}
@@ -206,7 +201,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	@Override 
 	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
 		catchCounter++;
-		printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), "");
+		printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
 	}
 
 	@Override 
@@ -241,6 +236,56 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		}
 	}
 
+	@Override public void enterProtocolInitializerDeclaration(SwiftParser.ProtocolInitializerDeclarationContext ctx) {
+		checkForThrowsAndRethrows(ctx, null);
+	}
+	
+	@Override public void enterInitializerDeclaration(SwiftParser.InitializerDeclarationContext ctx) {
+		
+		for (ParseTree child : ctx.children) {
+			if (!(child instanceof SwiftParser.InitializerBodyContext)){
+				if (!(child instanceof TerminalNodeImpl)) {
+					checkForThrowsAndRethrows((ParserRuleContext) child, null);
+				} else {
+					checkForThrowsAndRethrows(ctx, child);
+				}
+			}
+		}
+	}
+	
+	@Override public void enterFunctionSignature(SwiftParser.FunctionSignatureContext ctx) {
+		checkForThrowsAndRethrows(ctx, null);
+	}
+	
+	private void checkForThrowsAndRethrows(ParserRuleContext ctx, ParseTree tree) {
+		
+		String signature = tree == null ? ctx.getText() : tree.getText();
+
+		//System.out.println(signature);
+		
+		if (signature.contains("rethrows")) {
+			rethrowsCounter++;
+			printer.addToPrinting(MetricType.RETHROWS, ListenerUtil.getContextStartLocation(ctx), signature);
+		}
+		
+		String auxSignature = signature.replaceAll("rethrows", "");
+		
+		if (auxSignature.contains("throws")) {
+			
+			Pattern pattern = Pattern.compile("throws");
+			Matcher matcher = pattern.matcher(auxSignature);
+	
+		    int pos = 0;
+		    while (matcher.find(pos))
+		    {
+		    	pos = matcher.start() + 1;
+		    	
+		    	throwsCounter++;
+				printer.addToPrinting(MetricType.THROWS, ListenerUtil.getContextStartLocation(ctx), signature);
+		    }
+		}
+	}
+	
 	@Override 
 	public void enterConstantDeclaration(SwiftParser.ConstantDeclarationContext ctx) {
 
