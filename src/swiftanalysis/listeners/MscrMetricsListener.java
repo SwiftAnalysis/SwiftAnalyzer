@@ -6,6 +6,7 @@ import swiftanalysis.generated.SwiftParser;
 import swiftanalysis.generated.SwiftParser.CodeBlockContext;
 import swiftanalysis.generated.SwiftParser.ConditionClauseContext;
 import swiftanalysis.generated.SwiftParser.PatternInitializerContext;
+import swiftanalysis.generated.SwiftParser.ValueBindingPatternContext;
 import swiftanalysis.output.MetricType;
 import swiftanalysis.output.Printer;
 
@@ -48,8 +49,11 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static int throwCounter = 0;
 	private static int throwsCounter = 0;
 	private static int rethrowsCounter = 0;
+	
 	private static int catchCounter = 0;
 	private static int catchEmptyBlockCounter = 0;
+	private static int catchChecksTypeCounter = 0;
+	private static int catchChecksValueCounter = 0;
 	private static int genericCatchCounter = 0;
 	private static int genericCatchEmptyBlockCounter = 0;
 	private static int whereClauseInCatchCounter = 0;
@@ -150,8 +154,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		
 		String optionalChainingText = ctx.getText();
 
-		int callDepth = countOccurrences(optionalChainingText,'.');
-		int chainingCallDepth = countOccurrences(optionalChainingText,'?') - 1;
+		int callDepth = countOccurrences(optionalChainingText,".");
+		int chainingCallDepth = countOccurrences(optionalChainingText,"?") - 1;
 
 		checkAndAdd(optionalChainingObjectCallDepthMap, Integer.toString(callDepth));
 		checkAndAdd(optionalChainingCallDepthMap, Integer.toString(chainingCallDepth));
@@ -203,55 +207,96 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 	@Override 
 	public void enterDoStatement(SwiftParser.DoStatementContext ctx) {
-		doBlockCounter++;
-		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "");
 		
 		//Grammar: doStatement: 'do' codeBlock catchClauses? ;
-			
-		String catchesStr = ctx.catchClauses().getText();
-		int numberOfCatches = countOccurrences(catchesStr, "catch");		
+		
+		int numberOfCatches = 0;
+		if (ctx.catchClauses() != null) {
+			String catchesStr = ctx.catchClauses().getText();
+			numberOfCatches = countOccurrences(catchesStr, "catch");	
+		}
+		
 		checkAndAdd(doCatchBlocksMap, Integer.toString(numberOfCatches));
+		doBlockCounter++;
+		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "Catches: "+numberOfCatches);
 	}
 
 	@Override 
 	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
 		//grammar catchClause: 'catch' pattern? whereClause? codeBlock ;
-		boolean isGeneric = false;
 		
-		if (ctx.pattern() == null || ctx.pattern().getText().equals("_")) {
+		boolean isGeneric = false;
+		CodeBlockContext catchBlock = ctx.codeBlock();
+		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
+		boolean containsCast = ctx.pattern() == null ? false : containsTypeCast(ctx.pattern());
+		
+		if (ctx.pattern() == null || 
+				ctx.pattern().getText().equals("_") ||
+				ctx.pattern().getText().equals("ErrorType") ||
+				(ctx.pattern().getChild(0) instanceof SwiftParser.ValueBindingPatternContext && !containsCast ))
+		{
+	
 			isGeneric = true;
 		} 
 		
 		if (isGeneric) {
 			genericCatchCounter++;
+			checkAndAdd(genericCatchBlockLengthMap, Integer.toString(blockLength));
 			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+		
+			if (catchBlock.getText().equals("{}")){
+				genericCatchEmptyBlockCounter++;
+			}
+			
+			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
+			System.out.println("generic: "+decl);
+		
 		} else {
+			
 			catchCounter++;
-			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+			checkAndAdd(catchBlockLengthMap, Integer.toString(blockLength));
+			
+			if (catchBlock.getText().equals("{}")){
+				catchEmptyBlockCounter++;
+			}
+			
+			String catchValueType = "";
+			
+			if (containsCast || ctx.pattern().getText().startsWith("is")) {
+				catchChecksTypeCounter++;
+				catchValueType = "type";
+			} else {
+				catchChecksValueCounter++;
+				catchValueType = "value";
+			}
+			
+			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), 
+					"{Length: "+blockLength +", checks:"+catchValueType);
+			
+			System.out.println(catchValueType + ": "+ctx.getText().replace(ctx.codeBlock().getText(), ""));
 		}
 		
 		if (ctx.whereClause() != null) {
 			whereClauseInCatchCounter++;
-			printer.addToPrinting(MetricType.WHERE_CLAUSE, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+			printer.addToPrinting(MetricType.WHERE_CLAUSE, ListenerUtil.getContextStartLocation(ctx), "Length: "+blockLength);
 		} 
 		
-		CodeBlockContext catchBlock = ctx.codeBlock();
-			
-		if (catchBlock.getText().equals("{}")){
-			if (isGeneric) {
-				genericCatchEmptyBlockCounter++;
-			} else {
-				catchEmptyBlockCounter++;
-			}
-		}
+	}
+	
+	private boolean containsTypeCast(ParseTree tree) {
 		
-		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
+		if (tree.toString().equals("as")) {
+			return true;
+		} 
 		
-		if (isGeneric) {
-			checkAndAdd(genericCatchBlockLengthMap, Integer.toString(blockLength));
-		} else {
-			checkAndAdd(catchBlockLengthMap, Integer.toString(blockLength));
+		int childCount = tree.getChildCount();
+		boolean result = false;
+		
+		for (int i = 0; result == false && i< childCount; i++){
+			result = containsTypeCast(tree.getChild(i));
 		}
+	
+		return result;
 	}
 
 	@Override 
@@ -409,30 +454,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static int countOccurrences (String str, String substring){
 		return (str.length() - str.replace(substring, "").length()) / substring.length();
 	}
-	
-	private static int countOccurrences(String input, char c)
-	{
-		int count = 0;
-		for (int i=0; i < input.length(); i++)
-		{
-			if (input.charAt(i) == c) { count++; }
-		}
-		return count;
-	}
 
-	/**
-	 * Returns the last token of the construct represented by node.
-	 *
-	 * @param node A node
-	 * @return Stop token
-	 */
-	public static Token getStopTokenForNode(ParseTree node) {
-		if (node instanceof TerminalNodeImpl) {
-			return ((TerminalNodeImpl) node).getSymbol();
-		} else {
-			return ((ParserRuleContext) node).getStop();
-		}
-	}
 	public static void printSummary() {
 
 		System.out.println("If: "+ ifCounter); //OK
@@ -466,8 +488,12 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Throw: "+ throwCounter); //OK
 		System.out.println("Throws: "+ throwsCounter); //OK
 		System.out.println("Rethrows: "+ rethrowsCounter); //OK
-		System.out.println("Catch: "+ catchCounter +" Empty block: "+ catchEmptyBlockCounter + " " +catchBlockLengthMap); //OK
-		System.out.println("Generic Catch: "+ genericCatchCounter +" Empty block: "+ genericCatchEmptyBlockCounter + " " +genericCatchBlockLengthMap); //OK
+		
+		System.out.println("Generic Catch: "+ genericCatchCounter +" Empty block: "+ genericCatchEmptyBlockCounter + " " +genericCatchBlockLengthMap); //O
+		System.out.println("Catch with declaration: "+ catchCounter +" Empty block: "+ catchEmptyBlockCounter + " " +catchBlockLengthMap); //OK
+		System.out.println("Catch verifies Type:" + catchChecksTypeCounter); //OK
+		System.out.println("Catch verifies Value:" + catchChecksValueCounter); //OK
+		
 		System.out.println("Where Clause In Catch: "+ whereClauseInCatchCounter); //OK
 		
 		Map<String, Integer> fixedMap = removeDuplicatedValues(removeDuplicatedValues(typeMap, optionalTypeMap), forcedTypeMap);
