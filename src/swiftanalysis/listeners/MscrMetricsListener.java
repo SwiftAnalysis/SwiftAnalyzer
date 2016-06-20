@@ -3,6 +3,7 @@ package swiftanalysis.listeners;
 import swiftanalysis.analyzers.util.ListenerUtil;
 import swiftanalysis.generated.SwiftBaseListener;
 import swiftanalysis.generated.SwiftParser;
+import swiftanalysis.generated.SwiftParser.CodeBlockContext;
 import swiftanalysis.generated.SwiftParser.ConditionClauseContext;
 import swiftanalysis.generated.SwiftParser.PatternInitializerContext;
 import swiftanalysis.output.MetricType;
@@ -48,7 +49,9 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static int throwsCounter = 0;
 	private static int rethrowsCounter = 0;
 	private static int catchCounter = 0;
-
+	private static int genericCatchCounter = 0;
+	private static int whereClauseInCatchCounter = 0;
+	
 	private static int implicitVariableDeclarationsCounter = 0;
 	private static int explicitVariableDeclarationsCounter = 0;
 	private static int implicitConstantDeclarationsCounter = 0;
@@ -210,10 +213,23 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
 		//grammar catchClause: 'catch' pattern? whereClause? codeBlock ;
 		
-		catchCounter++;
-		printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
-	
-		//ctx.codeBlock().
+		if (ctx.pattern() == null || ctx.pattern().getText().equals("_")) {
+			genericCatchCounter++;
+			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+		} else {
+			catchCounter++;
+			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+		}
+		
+		if (ctx.whereClause() != null) {
+			whereClauseInCatchCounter++;
+			printer.addToPrinting(MetricType.WHERE_CLAUSE, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+		} 
+		
+		CodeBlockContext catchBlock = ctx.codeBlock();
+		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
+		System.out.println(catchBlock.getText() + " length: " + blockLength);
+		
 
 	}
 
@@ -269,8 +285,6 @@ public class MscrMetricsListener extends SwiftBaseListener {
 			String body = ((SwiftParser.InitializerDeclarationContext) ctx).initializerBody().getText();
 			signature = signature.replace(body, "");
 		}
-
-		System.out.println(signature);
 		
 		if (signature.contains("rethrows")) {
 			rethrowsCounter++;
@@ -432,7 +446,9 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Throws: "+ throwsCounter); //OK
 		System.out.println("Rethrows: "+ rethrowsCounter); //OK
 		System.out.println("Catch: "+ catchCounter); //OK
-
+		System.out.println("Generic Catch: "+ genericCatchCounter); //OK
+		System.out.println("Where Clause In Catch Counter: "+ whereClauseInCatchCounter); //OK
+		
 		Map<String, Integer> fixedMap = removeDuplicatedValues(removeDuplicatedValues(typeMap, optionalTypeMap), forcedTypeMap);
 
 		System.out.println("Normal types : "+ fixedMap.size());

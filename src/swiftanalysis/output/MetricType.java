@@ -20,7 +20,9 @@ public enum MetricType {
 	THROW,
 	THROWS,
 	RETHROWS,
-	CATCH 
+	CATCH, 
+	GENERIC_CATCH,
+	WHERE_CLAUSE
 	;
 	
     private String name;
@@ -50,5 +52,7 @@ public enum MetricType {
     	THROWS.name = "throws";
     	RETHROWS.name = "rethrows";
     	CATCH.name = "catch";
+    	GENERIC_CATCH.name = "generic catch";
+    	WHERE_CLAUSE.name = "where clause in catch";
     }
 }
