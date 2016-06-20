@@ -242,14 +242,16 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		if (isGeneric) {
 			genericCatchCounter++;
 			checkAndAdd(genericCatchBlockLengthMap, Integer.toString(blockLength));
-			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
+			
+			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
+			
+			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), "{Declaration: "+ decl +"}");
 		
 			if (catchBlock.getText().equals("{}")){
 				genericCatchEmptyBlockCounter++;
 			}
 			
-			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
-			System.out.println("generic: "+decl);
+			
 		
 		} else {
 			
@@ -261,7 +263,6 @@ public class MscrMetricsListener extends SwiftBaseListener {
 			}
 			
 			String catchValueType = "";
-			
 			if (containsCast || ctx.pattern().getText().startsWith("is")) {
 				catchChecksTypeCounter++;
 				catchValueType = "type";
@@ -270,10 +271,11 @@ public class MscrMetricsListener extends SwiftBaseListener {
 				catchValueType = "value";
 			}
 			
+			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
 			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), 
-					"{Length: "+blockLength +", checks:"+catchValueType);
+					"{Length: "+blockLength +", Checks: "+catchValueType+ "}," + "{Declaration: "+ decl +"}");
 			
-			System.out.println(catchValueType + ": "+ctx.getText().replace(ctx.codeBlock().getText(), ""));
+			//System.out.println(catchValueType + ": "+ctx.getText().replace(ctx.codeBlock().getText(), ""));
 		}
 		
 		if (ctx.whereClause() != null) {
