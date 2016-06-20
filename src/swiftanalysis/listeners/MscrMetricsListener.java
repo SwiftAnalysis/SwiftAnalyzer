@@ -49,7 +49,9 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static int throwsCounter = 0;
 	private static int rethrowsCounter = 0;
 	private static int catchCounter = 0;
+	private static int catchEmptyBlockCounter = 0;
 	private static int genericCatchCounter = 0;
+	private static int genericCatchEmptyBlockCounter = 0;
 	private static int whereClauseInCatchCounter = 0;
 	
 	private static int implicitVariableDeclarationsCounter = 0;
@@ -71,6 +73,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 	// This map holds the amount catches present at a do block.
 	private static Map<String, Integer> doCatchBlocksMap = new HashMap<String, Integer>();
+	private static Map<String, Integer> genericCatchBlockLengthMap = new HashMap<String, Integer>();
+	private static Map<String, Integer> catchBlockLengthMap = new HashMap<String, Integer>();
 
 
 	public MscrMetricsListener(Printer printer) {
@@ -212,8 +216,13 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	@Override 
 	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
 		//grammar catchClause: 'catch' pattern? whereClause? codeBlock ;
+		boolean isGeneric = false;
 		
 		if (ctx.pattern() == null || ctx.pattern().getText().equals("_")) {
+			isGeneric = true;
+		} 
+		
+		if (isGeneric) {
 			genericCatchCounter++;
 			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), ctx.getText());
 		} else {
@@ -227,10 +236,22 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		} 
 		
 		CodeBlockContext catchBlock = ctx.codeBlock();
-		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
-		System.out.println(catchBlock.getText() + " length: " + blockLength);
+			
+		if (catchBlock.getText().equals("{}")){
+			if (isGeneric) {
+				genericCatchEmptyBlockCounter++;
+			} else {
+				catchEmptyBlockCounter++;
+			}
+		}
 		
-
+		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
+		
+		if (isGeneric) {
+			checkAndAdd(genericCatchBlockLengthMap, Integer.toString(blockLength));
+		} else {
+			checkAndAdd(catchBlockLengthMap, Integer.toString(blockLength));
+		}
 	}
 
 	@Override 
@@ -445,9 +466,9 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Throw: "+ throwCounter); //OK
 		System.out.println("Throws: "+ throwsCounter); //OK
 		System.out.println("Rethrows: "+ rethrowsCounter); //OK
-		System.out.println("Catch: "+ catchCounter); //OK
-		System.out.println("Generic Catch: "+ genericCatchCounter); //OK
-		System.out.println("Where Clause In Catch Counter: "+ whereClauseInCatchCounter); //OK
+		System.out.println("Catch: "+ catchCounter +" Empty block: "+ catchEmptyBlockCounter + " " +catchBlockLengthMap); //OK
+		System.out.println("Generic Catch: "+ genericCatchCounter +" Empty block: "+ genericCatchEmptyBlockCounter + " " +genericCatchBlockLengthMap); //OK
+		System.out.println("Where Clause In Catch: "+ whereClauseInCatchCounter); //OK
 		
 		Map<String, Integer> fixedMap = removeDuplicatedValues(removeDuplicatedValues(typeMap, optionalTypeMap), forcedTypeMap);
 
