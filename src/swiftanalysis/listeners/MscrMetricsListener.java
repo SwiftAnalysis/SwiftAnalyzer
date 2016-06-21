@@ -79,7 +79,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static Map<String, Integer> doCatchBlocksMap = new HashMap<String, Integer>();
 	private static Map<String, Integer> genericCatchBlockLengthMap = new HashMap<String, Integer>();
 	private static Map<String, Integer> catchBlockLengthMap = new HashMap<String, Integer>();
-
+	private static Map<String, Integer> catchErrorTypeMap = new HashMap<String, Integer>();
 
 	public MscrMetricsListener(Printer printer) {
 		this.printer = printer;
@@ -250,8 +250,6 @@ public class MscrMetricsListener extends SwiftBaseListener {
 			if (catchBlock.getText().equals("{}")){
 				genericCatchEmptyBlockCounter++;
 			}
-			
-			
 		
 		} else {
 			
@@ -266,6 +264,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 			if (containsCast || ctx.pattern().getText().startsWith("is")) {
 				catchChecksTypeCounter++;
 				catchValueType = "type";
+				checkAndAdd(catchErrorTypeMap, getFirstTypeIdentifier(ctx.pattern()));
+
 			} else {
 				catchChecksValueCounter++;
 				catchValueType = "value";
@@ -273,7 +273,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 			
 			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
 			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), 
-					"{Length: "+blockLength +", Checks: "+catchValueType+ "}," + "{Declaration: "+ decl +"}");
+					"{Length: "+blockLength +", Checks: "+catchValueType+ ", Declaration: "+ decl +"}");
 			
 			//System.out.println(catchValueType + ": "+ctx.getText().replace(ctx.codeBlock().getText(), ""));
 		}
@@ -301,6 +301,22 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		return result;
 	}
 
+	private String getFirstTypeIdentifier(ParseTree tree) {
+		
+		if (tree instanceof SwiftParser.STypeContext) {
+			return tree.getText();
+		} 
+		
+		int childCount = tree.getChildCount();
+		String result = "";
+		
+		for (int i = 0; result.equals("") && i< childCount; i++){
+			result = getFirstTypeIdentifier(tree.getChild(i));
+		}
+	
+		return result;
+	}
+	
 	@Override 
 	public void enterThrowStatement(SwiftParser.ThrowStatementContext ctx) {
 		throwCounter++;
@@ -493,7 +509,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		
 		System.out.println("Generic Catch: "+ genericCatchCounter +" Empty block: "+ genericCatchEmptyBlockCounter + " " +genericCatchBlockLengthMap); //O
 		System.out.println("Catch with declaration: "+ catchCounter +" Empty block: "+ catchEmptyBlockCounter + " " +catchBlockLengthMap); //OK
-		System.out.println("Catch verifies Type:" + catchChecksTypeCounter); //OK
+		System.out.println("Catch verifies Type:" + catchChecksTypeCounter +" Error types: "+catchErrorTypeMap); //OK
 		System.out.println("Catch verifies Value:" + catchChecksValueCounter); //OK
 		
 		System.out.println("Where Clause In Catch: "+ whereClauseInCatchCounter); //OK
