@@ -11,6 +11,7 @@
       <library>
         <CLASSES>
           <root url="jar:///usr/local/lib/antlr-4.5.3-complete.jar!/" />
+          <root url="jar:///usr/local/lib/gson-2.6.2.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
