@@ -23,6 +23,7 @@ public abstract class ProjectAnalyzer implements Analyzer {
      * @param astStream stream of ASTs
      */
     public void analyzeProject(File projectPath, Stream<AST> astStream) {
+        System.out.println();
         System.out.println("#");
         System.out.println("# Project: " + projectPath.getAbsolutePath());
         System.out.println("#");
