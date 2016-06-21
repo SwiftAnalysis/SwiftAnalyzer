@@ -85,8 +85,6 @@ class ProjectParser {
             } else {
                 System.err.println("Could not open " + file.getAbsolutePath());
             }
-        } else {
-            System.err.println(file.getAbsolutePath() + " is not a file nor a directory");
         }
     }
     
