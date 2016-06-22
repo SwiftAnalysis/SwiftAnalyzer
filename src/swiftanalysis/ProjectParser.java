@@ -1,11 +1,8 @@
 package swiftanalysis;
 
+import org.antlr.v4.runtime.*;
 import swiftanalysis.generated.SwiftLexer;
 import swiftanalysis.generated.SwiftParser;
-
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CommonTokenStream;
 
 import java.io.File;
 import java.io.FileReader;
@@ -16,7 +13,7 @@ import java.util.stream.Stream;
 /**
  * Responsible for finding all Swift files in a project and generating parse trees.
  */
-class ProjectParser {
+public class ProjectParser {
 
 	private static int numberOfFilesBeforeClearingCache = 20;
     private static AtomicInteger numFiles = new AtomicInteger(0);
@@ -40,17 +37,37 @@ class ProjectParser {
      * @return the parse tree
      */
     private static AST parseFile(File file) {
+//        System.out.println("Parsing " + file.getAbsolutePath());
         CharStream input = null;
         try {
             input = new ANTLRInputStream(new FileReader(file));
         } catch (IOException e) {
             System.err.println("Could not read " + file.getAbsolutePath());
         }
+        SwiftParser parser = getSwiftParser(input);
+        clearDFACache(parser);
+        try {
+            return new AST(file, parser.topLevel(), parser);
+        } catch (ErrorListener.ParseError e) {
+            return new AST(file, e);
+        }
+    }
+
+    /**
+     * Returns a Swift Parser with a given input stream
+     *
+     * @param input the input stream for the parser
+     * @return the Swift Parser
+     */
+    private static SwiftParser getSwiftParser(CharStream input) {
         SwiftLexer lexer = new SwiftLexer(input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(new ErrorListener());
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         SwiftParser parser = new SwiftParser(tokens);
-        clearDFACache(parser);
-        return new AST(file, parser.topLevel(), parser);
+        parser.removeErrorListeners();
+        parser.addErrorListener(new ErrorListener());
+        return parser;
     }
 
     /**
@@ -101,4 +118,73 @@ class ProjectParser {
         }
     }
 
+    /**
+     * Error listener for the ANTLR Lexer and Parser that throws an exception on parse error.
+     */
+    public static class ErrorListener extends BaseErrorListener {
+        public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+            throw new ParseError(line, charPositionInLine, msg);
+        }
+
+        /**
+         * Parse error that will be thrown.
+         */
+        public class ParseError extends RuntimeException {
+
+            /**
+             * line number
+             */
+            private int line;
+
+            /**
+             * character position in the line
+             */
+            private int charPositionInLine;
+
+            /**
+             * message
+             */
+            private String msg;
+
+            /**
+             * Constructs a parse error with line, character position in that line and a message.
+             *
+             * @param line line number
+             * @param charPositionInLine offset of the parse error in the line
+             * @param msg descriptive message of the error
+             */
+            ParseError(int line, int charPositionInLine, String msg) {
+                this.line = line;
+                this.charPositionInLine = charPositionInLine;
+                this.msg = msg;
+            }
+
+            /**
+             * Returns the line number.
+             *
+             * @return the line number
+             */
+            public int getLine() {
+                return line;
+            }
+
+            /**
+             * Returns offset of the parse error in the line.
+             *
+             * @return offset of the parse error in the line
+             */
+            public int getCharPositionInLine() {
+                return charPositionInLine;
+            }
+
+            /**
+             * Returns a descriptive message.
+             *
+             * @return message
+             */
+            public String getMsg() {
+                return msg;
+            }
+        }
+    }
 }
