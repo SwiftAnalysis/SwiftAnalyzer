@@ -372,8 +372,9 @@ protocolInitializerDeclaration : initializerHead genericParameterClause? paramet
 protocolSubscriptDeclaration : subscriptHead subscriptResult getterSetterKeywordBlock  ;
 
 // GRAMMAR OF A PROTOCOL ASSOCIATED TYPE DECLARATION
-
-protocolAssociatedTypeDeclaration : attributes? accessLevelModifier? 'associatedtype' typealiasName typeInheritanceClause? typealiasAssignment?;
+                                                                     // added 'typealias' as alternative
+                                                                     // to support Swift 2.0
+protocolAssociatedTypeDeclaration : attributes? accessLevelModifier? ('associatedtype' | 'typealias') typealiasName typeInheritanceClause? typealiasAssignment?;
 
 // GRAMMAR OF AN INITIALIZER DECLARATION
 
