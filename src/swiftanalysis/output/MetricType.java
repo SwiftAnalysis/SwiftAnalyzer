@@ -22,6 +22,7 @@ public enum MetricType {
 	RETHROWS,
 	CATCH, 
 	GENERIC_CATCH,
+	PRINT_CATCH,
 	WHERE_CLAUSE
 	;
 	
@@ -53,6 +54,7 @@ public enum MetricType {
     	RETHROWS.name = "rethrows";
     	CATCH.name = "catch";
     	GENERIC_CATCH.name = "generic catch";
+		PRINT_CATCH.name = "print catch";
     	WHERE_CLAUSE.name = "where clause in catch";
     }
 }

@@ -3,20 +3,14 @@ package swiftanalysis.listeners;
 import swiftanalysis.analyzers.util.ListenerUtil;
 import swiftanalysis.generated.SwiftBaseListener;
 import swiftanalysis.generated.SwiftParser;
-import swiftanalysis.generated.SwiftParser.CodeBlockContext;
-import swiftanalysis.generated.SwiftParser.ConditionClauseContext;
-import swiftanalysis.generated.SwiftParser.PatternInitializerContext;
-import swiftanalysis.generated.SwiftParser.ValueBindingPatternContext;
+import swiftanalysis.generated.SwiftParser.*;
 import swiftanalysis.output.MetricType;
 import swiftanalysis.output.Printer;
 
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.antlr.v4.runtime.tree.TerminalNodeImpl;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -57,6 +51,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static int genericCatchCounter = 0;
 	private static int genericCatchEmptyBlockCounter = 0;
 	private static int whereClauseInCatchCounter = 0;
+	private static int printCatch = 0;
 	
 	private static int implicitVariableDeclarationsCounter = 0;
 	private static int explicitVariableDeclarationsCounter = 0;
@@ -80,6 +75,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	private static Map<String, Integer> genericCatchBlockLengthMap = new HashMap<String, Integer>();
 	private static Map<String, Integer> catchBlockLengthMap = new HashMap<String, Integer>();
 	private static Map<String, Integer> catchErrorTypeMap = new HashMap<String, Integer>();
+
+	private static Set<String> printFunctionNames = new HashSet<>(Arrays.asList("print", "println", "NSLog"));
 
 	public MscrMetricsListener(Printer printer) {
 		this.printer = printer;
@@ -282,9 +279,35 @@ public class MscrMetricsListener extends SwiftBaseListener {
 			whereClauseInCatchCounter++;
 			printer.addToPrinting(MetricType.WHERE_CLAUSE, ListenerUtil.getContextStartLocation(ctx), "Length: "+blockLength);
 		} 
-		
+
+		if (containsOnlyFunctionCalls(catchBlock, printFunctionNames)) {
+			printCatch++;
+			printer.addToPrinting(MetricType.PRINT_CATCH, ListenerUtil.getContextStartLocation(ctx), catchBlock.getText());
+		}
 	}
-	
+
+	private boolean containsOnlyFunctionCalls(CodeBlockContext catchBlock, Set<String> functionNames) {
+		return catchBlock.statements() != null
+				&& catchBlock.statements().statement().stream().allMatch(statement -> isFunctionCall(statement, functionNames));
+	}
+
+	private boolean isFunctionCall(StatementContext statement, Set<String> functionNames) {
+		ExpressionContext expression = statement.expression();
+		if (expression != null) {
+			PrefixExpressionContext prefix = expression.prefixExpression();
+			if (prefix.getChildCount() == 1) {
+				if (prefix.getChild(0) instanceof FunctionCallExpressionContext) {
+					FunctionCallExpressionContext functionCall = (FunctionCallExpressionContext) prefix.getChild(0);
+					String functionName = functionCall.getChild(0).getText();
+					if (functionNames.contains(functionName)) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	private boolean containsTypeCast(ParseTree tree) {
 		
 		if (tree.toString().equals("as")) {
@@ -511,9 +534,10 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Catch with declaration: "+ catchCounter +" Empty block: "+ catchEmptyBlockCounter + " " +catchBlockLengthMap); //OK
 		System.out.println("Catch verifies Type:" + catchChecksTypeCounter +" Error types: "+catchErrorTypeMap); //OK
 		System.out.println("Catch verifies Value:" + catchChecksValueCounter); //OK
-		
+
 		System.out.println("Where Clause In Catch: "+ whereClauseInCatchCounter); //OK
-		
+		System.out.println("Only Print In Catch: "+ printCatch);
+
 		Map<String, Integer> fixedMap = removeDuplicatedValues(removeDuplicatedValues(typeMap, optionalTypeMap), forcedTypeMap);
 
 		System.out.println("Normal types : "+ fixedMap.size());
