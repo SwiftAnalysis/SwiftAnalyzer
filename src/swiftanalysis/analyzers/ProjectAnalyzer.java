@@ -43,7 +43,7 @@ public abstract class ProjectAnalyzer implements Analyzer {
             if (projectPath.isDirectory()) {
                 printer.setOutputFileDirectory(projectPath.getAbsolutePath());
             } else {
-                printer.setOutputFileDirectory(projectPath.getParent());
+                printer.setOutputFileDirectory(projectPath.getAbsoluteFile().getParent());
             }
         }
 
