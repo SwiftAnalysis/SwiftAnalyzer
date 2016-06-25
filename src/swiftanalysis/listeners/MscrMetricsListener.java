@@ -343,7 +343,8 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	@Override 
 	public void enterThrowStatement(SwiftParser.ThrowStatementContext ctx) {
 		throwCounter++;
-		printer.addToPrinting(MetricType.THROW, ListenerUtil.getContextStartLocation(ctx), "");
+		//System.out.println("Throw Expression: "+ctx.expression().getText());
+		printer.addToPrinting(MetricType.THROW, ListenerUtil.getContextStartLocation(ctx), ctx.expression().getText());
 	}
 
 	@Override 
