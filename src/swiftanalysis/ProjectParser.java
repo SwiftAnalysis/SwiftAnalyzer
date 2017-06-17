@@ -1,8 +1,8 @@
 package swiftanalysis;
 
 import org.antlr.v4.runtime.*;
-import swiftanalysis.generated.SwiftLexer;
-import swiftanalysis.generated.SwiftParser;
+import swiftanalysis.generated.Swift3Lexer;
+import swiftanalysis.generated.Swift3Parser;
 
 import java.io.File;
 import java.io.FileReader;
@@ -44,11 +44,14 @@ public class ProjectParser {
         } catch (IOException e) {
             System.err.println("Could not read " + file.getAbsolutePath());
         }
-        SwiftParser parser = getSwiftParser(input);
+        Swift3Parser parser = getSwiftParser(input);
         clearDFACache(parser);
         try {
-            return new AST(file, parser.topLevel(), parser);
+        	System.out.println(file.getAbsolutePath());
+            return new AST(file, parser.top_level(), parser);
         } catch (ErrorListener.ParseError e) {
+        	System.out.println("error: "+file.getAbsolutePath());
+            System.out.println(e.getMsg());
             return new AST(file, e);
         }
     }
@@ -59,12 +62,12 @@ public class ProjectParser {
      * @param input the input stream for the parser
      * @return the Swift Parser
      */
-    private static SwiftParser getSwiftParser(CharStream input) {
-        SwiftLexer lexer = new SwiftLexer(input);
+    private static Swift3Parser getSwiftParser(CharStream input) {
+        Swift3Lexer lexer = new Swift3Lexer(input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(new ErrorListener());
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        SwiftParser parser = new SwiftParser(tokens);
+        Swift3Parser parser = new Swift3Parser(tokens);
         parser.removeErrorListeners();
         parser.addErrorListener(new ErrorListener());
         return parser;
@@ -110,7 +113,7 @@ public class ProjectParser {
      *
      * @param parser current SwiftParser instance
      */
-    private static void clearDFACache(SwiftParser parser) {
+    private static void clearDFACache(Swift3Parser parser) {
         numFiles.incrementAndGet();
         if (numFiles.compareAndSet(numberOfFilesBeforeClearingCache, 0)) {
         	//System.out.println("cleared DFA");

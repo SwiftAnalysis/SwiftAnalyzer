@@ -1,9 +1,7 @@
 package swiftanalysis;
 
 import swiftanalysis.analyzers.Analyzer;
-import swiftanalysis.analyzers.EmptyCatchBlockCounter;
 import swiftanalysis.analyzers.MscrMetricsProjectAnalyzer;
-import swiftanalysis.analyzers.ProjectAnalyzer;
 import swiftanalysis.output.Formatter;
 import swiftanalysis.output.JSONFormatter;
 import swiftanalysis.output.Printer;
@@ -22,8 +20,6 @@ public class SwiftAnalyzer {
     /**
      * Analyzer of choice to analyze the project(s)
      */
-	 
-    //private static Analyzer analyzer = new EmptyCatchBlockCounter(printer);
     private static Analyzer analyzer = new MscrMetricsProjectAnalyzer(printer);
 
     /**

@@ -1,14 +1,12 @@
 package swiftanalysis.listeners;
 
-import swiftanalysis.analyzers.util.ListenerUtil;
-import swiftanalysis.generated.SwiftBaseListener;
-import swiftanalysis.generated.SwiftParser;
-import swiftanalysis.generated.SwiftParser.*;
-import swiftanalysis.output.MetricType;
-import swiftanalysis.output.Printer;
-
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
+import swiftanalysis.analyzers.util.ListenerUtil;
+import swiftanalysis.generated.Swift3BaseListener;
+import swiftanalysis.generated.Swift3Parser;
+import swiftanalysis.output.MetricType;
+import swiftanalysis.output.Printer;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -18,7 +16,7 @@ import java.util.regex.Pattern;
 /**
  * Collects basic metrics.
  */
-public class MscrMetricsListener extends SwiftBaseListener {
+public class MscrMetricsListener extends Swift3BaseListener {
 
 	private Printer printer;
 	
@@ -78,12 +76,16 @@ public class MscrMetricsListener extends SwiftBaseListener {
 
 	private static Set<String> printFunctionNames = new HashSet<>(Arrays.asList("print", "println", "NSLog"));
 
+	//TabsCounter
+	private static int tabs = 0;
+	
+	
 	public MscrMetricsListener(Printer printer) {
 		this.printer = printer;
 	}
 
 	@Override
-	public void enterTryOperator(SwiftParser.TryOperatorContext ctx) {
+	public void enterTry_operator(Swift3Parser.Try_operatorContext ctx) {
 
 		String tryText = ctx.getText();
 
@@ -100,7 +102,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	}
 
 	@Override
-	public void enterConditionClause(ConditionClauseContext ctx) {
+	public void enterCondition(Swift3Parser.ConditionContext ctx) {
 
 		if (containsNilCheck(ctx)) {
 			equalsNilCounter++;
@@ -108,12 +110,13 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		}
 	}
 
-	@Override public void enterIfStatement(SwiftParser.IfStatementContext ctx) { 
+	@Override
+	public void enterIf_statement(Swift3Parser.If_statementContext ctx) {
 
 		ifCounter++;
 		printer.addToPrinting(MetricType.IF, ListenerUtil.getContextStartLocation(ctx), "");
 		
-		ConditionClauseContext conditionClause = ctx.conditionClause();
+		Swift3Parser.Condition_listContext conditionClause = ctx.condition_list();
 
 		if (conditionClause.getText().startsWith("let")) {
 			ifLetCounter++;
@@ -126,12 +129,13 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		}
 	}
 
-	@Override public void enterGuardStatement(SwiftParser.GuardStatementContext ctx) { 
+	@Override
+	public void enterGuard_statement(Swift3Parser.Guard_statementContext ctx) {
 
 		guardCounter++;
 		printer.addToPrinting(MetricType.GUARD, ListenerUtil.getContextStartLocation(ctx), "");
-		
-		ConditionClauseContext conditionClause = ctx.conditionClause();
+
+		Swift3Parser.Condition_listContext conditionClause = ctx.condition_list();
 
 		if (conditionClause.getText().startsWith("let")) {
 			guardLetCounter++;
@@ -144,296 +148,296 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		}
 	}
 
-	@Override public void enterOptionalChainingExpression(SwiftParser.OptionalChainingExpressionContext ctx) {
-
-		optionalChainingCounter++;
-		printer.addToPrinting(MetricType.OPTIONAL_CHAINING, ListenerUtil.getContextStartLocation(ctx), "");
-		
-		String optionalChainingText = ctx.getText();
-
-		int callDepth = countOccurrences(optionalChainingText,".");
-		int chainingCallDepth = countOccurrences(optionalChainingText,"?") - 1;
-
-		checkAndAdd(optionalChainingObjectCallDepthMap, Integer.toString(callDepth));
-		checkAndAdd(optionalChainingCallDepthMap, Integer.toString(chainingCallDepth));
-	}
-
-	@Override public void enterForcedValueExpression(SwiftParser.ForcedValueExpressionContext ctx) {
-		forcedUnwrappingsCounter++;
-		printer.addToPrinting(MetricType.FORCED_UNWRAPPING, ListenerUtil.getContextStartLocation(ctx), "");
-	}
-
-	@Override 
-	public void enterSType(SwiftParser.STypeContext ctx) { 
-
-		String type = ctx.getText();
-		
-		if (ctx.children != null && ctx.children.size() >= 2) {
-			ParseTree secondChild = ctx.getChild(1);
-			if (secondChild.getText().equals("!")) {
-				checkAndAdd(forcedTypeMap, type);
-			} else if (secondChild.getText().equals("?")) {
-				checkAndAdd(optionalTypeMap, type);
-			} 
-		} else {
-			checkAndAdd(typeMap, type);
-		}
-	}
-
-	@Override
-	public void enterTypeCastingOperator(SwiftParser.TypeCastingOperatorContext ctx) {
-
-		ParseTree secondChild = ctx.getChild(1);
-
-		if (secondChild.getText().equals("!")) {
-			forcedTypeCastingCounter++;
-			printer.addToPrinting(MetricType.FORCED_TYPE_CASTING, ListenerUtil.getContextStartLocation(ctx), "");
-		} else if (secondChild.getText().equals("?")) {
-			optionalTypeCastingCounter++;
-			printer.addToPrinting(MetricType.OPTIONAL_TYPE_CASTING, ListenerUtil.getContextStartLocation(ctx), "");
-		}
-	}
-
-	@Override 
-	public void enterOperator(SwiftParser.OperatorContext ctx) {
-		if (ctx.getText().equals("??")) {
-			nilCoalescingCounter++;
-			printer.addToPrinting(MetricType.NIL_COALESCING, ListenerUtil.getContextStartLocation(ctx), "");
-		}
-	}
-
-	@Override 
-	public void enterDoStatement(SwiftParser.DoStatementContext ctx) {
-		
-		//Grammar: doStatement: 'do' codeBlock catchClauses? ;
-		
-		int numberOfCatches = 0;
-		if (ctx.catchClauses() != null) {
-			String catchesStr = ctx.catchClauses().getText();
-			numberOfCatches = countOccurrences(catchesStr, "catch");	
-		}
-		
-		checkAndAdd(doCatchBlocksMap, Integer.toString(numberOfCatches));
-		doBlockCounter++;
-		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "Catches: "+numberOfCatches);
-	}
-
-	@Override 
-	public void enterCatchClause(SwiftParser.CatchClauseContext ctx) {
-		//grammar catchClause: 'catch' pattern? whereClause? codeBlock ;
-		
-		boolean isGeneric = false;
-		CodeBlockContext catchBlock = ctx.codeBlock();
-		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
-		boolean containsCast = ctx.pattern() == null ? false : containsTypeCast(ctx.pattern());
-		
-		if (ctx.pattern() == null || 
-				ctx.pattern().getText().equals("_") ||
-				ctx.pattern().getText().equals("ErrorType") ||
-				(ctx.pattern().getChild(0) instanceof SwiftParser.ValueBindingPatternContext && !containsCast ))
-		{
-	
-			isGeneric = true;
-		} 
-		
-		if (isGeneric) {
-			genericCatchCounter++;
-			checkAndAdd(genericCatchBlockLengthMap, Integer.toString(blockLength));
-			
-			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
-			
-			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), "{Declaration: "+ decl +"}");
-		
-			if (catchBlock.getText().equals("{}")){
-				genericCatchEmptyBlockCounter++;
-			}
-		
-		} else {
-			
-			catchCounter++;
-			checkAndAdd(catchBlockLengthMap, Integer.toString(blockLength));
-			
-			if (catchBlock.getText().equals("{}")){
-				catchEmptyBlockCounter++;
-			}
-			
-			String catchValueType = "";
-			if (containsCast || ctx.pattern().getText().startsWith("is")) {
-				catchChecksTypeCounter++;
-				catchValueType = "type";
-				checkAndAdd(catchErrorTypeMap, getFirstTypeIdentifier(ctx.pattern()));
-
-			} else {
-				catchChecksValueCounter++;
-				catchValueType = "value";
-			}
-			
-			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
-			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx), 
-					"{Length: "+blockLength +", Checks: "+catchValueType+ ", Declaration: "+ decl +"}");
-			
-			//System.out.println(catchValueType + ": "+ctx.getText().replace(ctx.codeBlock().getText(), ""));
-		}
-		
-		if (ctx.whereClause() != null) {
-			whereClauseInCatchCounter++;
-			printer.addToPrinting(MetricType.WHERE_CLAUSE, ListenerUtil.getContextStartLocation(ctx), "Length: "+blockLength);
-		} 
-
-		if (containsOnlyFunctionCalls(catchBlock, printFunctionNames)) {
-			printCatch++;
-			printer.addToPrinting(MetricType.PRINT_CATCH, ListenerUtil.getContextStartLocation(ctx), catchBlock.getText());
-		}
-	}
-
-	private boolean containsOnlyFunctionCalls(CodeBlockContext catchBlock, Set<String> functionNames) {
-		return catchBlock.statements() != null
-				&& catchBlock.statements().statement().stream().allMatch(statement -> isFunctionCall(statement, functionNames));
-	}
-
-	private boolean isFunctionCall(StatementContext statement, Set<String> functionNames) {
-		ExpressionContext expression = statement.expression();
-		if (expression != null) {
-			PrefixExpressionContext prefix = expression.prefixExpression();
-			if (prefix.getChildCount() == 1) {
-				if (prefix.getChild(0) instanceof FunctionCallExpressionContext) {
-					FunctionCallExpressionContext functionCall = (FunctionCallExpressionContext) prefix.getChild(0);
-					String functionName = functionCall.getChild(0).getText();
-					if (functionNames.contains(functionName)) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	private boolean containsTypeCast(ParseTree tree) {
-		
-		if (tree.toString().equals("as")) {
-			return true;
-		} 
-		
-		int childCount = tree.getChildCount();
-		boolean result = false;
-		
-		for (int i = 0; result == false && i< childCount; i++){
-			result = containsTypeCast(tree.getChild(i));
-		}
-	
-		return result;
-	}
-
-	private String getFirstTypeIdentifier(ParseTree tree) {
-		
-		if (tree instanceof SwiftParser.STypeContext) {
-			return tree.getText();
-		} 
-		
-		int childCount = tree.getChildCount();
-		String result = "";
-		
-		for (int i = 0; result.equals("") && i< childCount; i++){
-			result = getFirstTypeIdentifier(tree.getChild(i));
-		}
-	
-		return result;
-	}
-	
-	@Override 
-	public void enterThrowStatement(SwiftParser.ThrowStatementContext ctx) {
-		throwCounter++;
-		//System.out.println("Throw Expression: "+ctx.expression().getText());
-		printer.addToPrinting(MetricType.THROW, ListenerUtil.getContextStartLocation(ctx), ctx.expression().getText());
-	}
-
-	@Override 
-	public void enterVariableDeclaration(SwiftParser.VariableDeclarationContext ctx) {
-
-		if (ctx.patternInitializerList() != null && ctx.patternInitializerList().patternInitializer() != null){
-			for (PatternInitializerContext child : ctx.patternInitializerList().patternInitializer()) {
-				if (child.pattern().typeAnnotation() != null) {
-					if (child.pattern().typeAnnotation().getText().startsWith(":")) {
-						explicitVariableDeclarationsCounter++;
-					} else {
-						implicitVariableDeclarationsCounter++;
-					}
-				} else {
-					implicitVariableDeclarationsCounter++;
-				}
-			}
-		} else if (ctx.typeAnnotation() != null){
-			if (ctx.typeAnnotation().getText().startsWith(":")) {
-				explicitVariableDeclarationsCounter++;
-			} else {
-				implicitVariableDeclarationsCounter++;
-			}
-		} else {
-			implicitVariableDeclarationsCounter++;
-		}
-	}
-
-	@Override public void enterProtocolInitializerDeclaration(SwiftParser.ProtocolInitializerDeclarationContext ctx) {
-		checkForThrowsAndRethrows(ctx);
-	}
-	
-	@Override public void enterInitializerDeclaration(SwiftParser.InitializerDeclarationContext ctx) {
-		checkForThrowsAndRethrows(ctx);
-	}
-	
-	@Override public void enterFunctionSignature(SwiftParser.FunctionSignatureContext ctx) {
-		checkForThrowsAndRethrows(ctx);
-	}
-	
-	private void checkForThrowsAndRethrows(ParserRuleContext ctx) {
-		
-		String signature = ctx.getText();
-		
-		if (ctx instanceof SwiftParser.InitializerDeclarationContext){
-			String body = ((SwiftParser.InitializerDeclarationContext) ctx).initializerBody().getText();
-			signature = signature.replace(body, "");
-		}
-		
-		if (signature.contains("rethrows")) {
-			rethrowsCounter++;
-			printer.addToPrinting(MetricType.RETHROWS, ListenerUtil.getContextStartLocation(ctx), signature);
-		}
-		
-		String auxSignature = signature.replaceAll("rethrows", "");
-		
-		if (auxSignature.contains("throws")) {
-			
-			Pattern pattern = Pattern.compile("throws");
-			Matcher matcher = pattern.matcher(auxSignature);
-	
-		    int pos = 0;
-		    while (matcher.find(pos))
-		    {
-		    	pos = matcher.start() + 1;
-		    	
-		    	throwsCounter++;
-				printer.addToPrinting(MetricType.THROWS, ListenerUtil.getContextStartLocation(ctx), signature);
-		    }
-		}
-	}
-	
-	@Override 
-	public void enterConstantDeclaration(SwiftParser.ConstantDeclarationContext ctx) {
-
-		if (ctx.patternInitializerList() != null && ctx.patternInitializerList().patternInitializer() != null){
-			for (PatternInitializerContext child : ctx.patternInitializerList().patternInitializer()) {
-				if (child.pattern().typeAnnotation() != null) {
-					if (child.pattern().typeAnnotation().getText().startsWith(":")) {
-						explicitConstantDeclarationsCounter++;
-					} else {
-						implicitConstantDeclarationsCounter++;
-					}
-				} else {
-					implicitConstantDeclarationsCounter++;
-				}
-			}
-		} 
-	}
+//	@Override public void enterOptionalChainingExpression(Swift3Parser.OptionalChainingExpressionContext ctx) {
+//
+//		optionalChainingCounter++;
+//		printer.addToPrinting(MetricType.OPTIONAL_CHAINING, ListenerUtil.getContextStartLocation(ctx), "");
+//
+//		String optionalChainingText = ctx.getText();
+//
+//		int callDepth = countOccurrences(optionalChainingText,".");
+//		int chainingCallDepth = countOccurrences(optionalChainingText,"?") - 1;
+//
+//		checkAndAdd(optionalChainingObjectCallDepthMap, Integer.toString(callDepth));
+//		checkAndAdd(optionalChainingCallDepthMap, Integer.toString(chainingCallDepth));
+//	}
+//
+//	@Override public void enterForcedValueExpression(Swift3Parser.ForcedValueExpressionContext ctx) {
+//		forcedUnwrappingsCounter++;
+//		printer.addToPrinting(MetricType.FORCED_UNWRAPPING, ListenerUtil.getContextStartLocation(ctx), "");
+//	}
+//
+//	@Override
+//	public void enterSType(Swift3Parser.STypeContext ctx) {
+//
+//		String type = ctx.getText();
+//
+//		if (ctx.children != null && ctx.children.size() >= 2) {
+//			ParseTree secondChild = ctx.getChild(1);
+//			if (secondChild.getText().equals("!")) {
+//				checkAndAdd(forcedTypeMap, type);
+//			} else if (secondChild.getText().equals("?")) {
+//				checkAndAdd(optionalTypeMap, type);
+//			}
+//		} else {
+//			checkAndAdd(typeMap, type);
+//		}
+//	}
+//
+//	@Override
+//	public void enterTypeCastingOperator(Swift3Parser.TypeCastingOperatorContext ctx) {
+//
+//		ParseTree secondChild = ctx.getChild(1);
+//
+//		if (secondChild.getText().equals("!")) {
+//			forcedTypeCastingCounter++;
+//			printer.addToPrinting(MetricType.FORCED_TYPE_CASTING, ListenerUtil.getContextStartLocation(ctx), "");
+//		} else if (secondChild.getText().equals("?")) {
+//			optionalTypeCastingCounter++;
+//			printer.addToPrinting(MetricType.OPTIONAL_TYPE_CASTING, ListenerUtil.getContextStartLocation(ctx), "");
+//		}
+//	}
+//
+//	@Override
+//	public void enterOperator(Swift3Parser.OperatorContext ctx) {
+//		if (ctx.getText().equals("??")) {
+//			nilCoalescingCounter++;
+//			printer.addToPrinting(MetricType.NIL_COALESCING, ListenerUtil.getContextStartLocation(ctx), "");
+//		}
+//	}
+//
+//	@Override
+//	public void enterDoStatement(Swift3Parser.DoStatementContext ctx) {
+//
+//		//Grammar: doStatement: 'do' codeBlock catchClauses? ;
+//
+//		int numberOfCatches = 0;
+//		if (ctx.catchClauses() != null) {
+//			String catchesStr = ctx.catchClauses().getText();
+//			numberOfCatches = countOccurrences(catchesStr, "catch");
+//		}
+//
+//		checkAndAdd(doCatchBlocksMap, Integer.toString(numberOfCatches));
+//		doBlockCounter++;
+//		printer.addToPrinting(MetricType.DO_BLOCK, ListenerUtil.getContextStartLocation(ctx), "Catches: "+numberOfCatches);
+//	}
+//
+//	@Override
+//	public void enterCatchClause(Swift3Parser.CatchClauseContext ctx) {
+//		//grammar catchClause: 'catch' pattern? whereClause? codeBlock ;
+//
+//		boolean isGeneric = false;
+//		CodeBlockContext catchBlock = ctx.codeBlock();
+//		int blockLength = ListenerUtil.getContextStopLocation(catchBlock).line - ListenerUtil.getContextStartLocation(catchBlock).line;
+//		boolean containsCast = ctx.pattern() == null ? false : containsTypeCast(ctx.pattern());
+//
+//		if (ctx.pattern() == null ||
+//				ctx.pattern().getText().equals("_") ||
+//				ctx.pattern().getText().equals("ErrorType") ||
+//				(ctx.pattern().getChild(0) instanceof Swift3Parser.ValueBindingPatternContext && !containsCast ))
+//		{
+//
+//			isGeneric = true;
+//		}
+//
+//		if (isGeneric) {
+//			genericCatchCounter++;
+//			checkAndAdd(genericCatchBlockLengthMap, Integer.toString(blockLength));
+//
+//			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
+//
+//			printer.addToPrinting(MetricType.GENERIC_CATCH, ListenerUtil.getContextStartLocation(ctx), "{Declaration: "+ decl +"}");
+//
+//			if (catchBlock.getText().equals("{}")){
+//				genericCatchEmptyBlockCounter++;
+//			}
+//
+//		} else {
+//
+//			catchCounter++;
+//			checkAndAdd(catchBlockLengthMap, Integer.toString(blockLength));
+//
+//			if (catchBlock.getText().equals("{}")){
+//				catchEmptyBlockCounter++;
+//			}
+//
+//			String catchValueType = "";
+//			if (containsCast || ctx.pattern().getText().startsWith("is")) {
+//				catchChecksTypeCounter++;
+//				catchValueType = "type";
+//				checkAndAdd(catchErrorTypeMap, getFirstTypeIdentifier(ctx.pattern()));
+//
+//			} else {
+//				catchChecksValueCounter++;
+//				catchValueType = "value";
+//			}
+//
+//			String decl = ctx.getText().replace(ctx.codeBlock().getText(), "");
+//			printer.addToPrinting(MetricType.CATCH, ListenerUtil.getContextStartLocation(ctx),
+//					"{Length: "+blockLength +", Checks: "+catchValueType+ ", Declaration: "+ decl +"}");
+//
+//			//System.out.println(catchValueType + ": "+ctx.getText().replace(ctx.codeBlock().getText(), ""));
+//		}
+//
+//		if (ctx.whereClause() != null) {
+//			whereClauseInCatchCounter++;
+//			printer.addToPrinting(MetricType.WHERE_CLAUSE, ListenerUtil.getContextStartLocation(ctx), "Length: "+blockLength);
+//		}
+//
+//		if (containsOnlyFunctionCalls(catchBlock, printFunctionNames)) {
+//			printCatch++;
+//			printer.addToPrinting(MetricType.PRINT_CATCH, ListenerUtil.getContextStartLocation(ctx), catchBlock.getText());
+//		}
+//	}
+//
+//	private boolean containsOnlyFunctionCalls(CodeBlockContext catchBlock, Set<String> functionNames) {
+//		return catchBlock.statements() != null
+//				&& catchBlock.statements().statement().stream().allMatch(statement -> isFunctionCall(statement, functionNames));
+//	}
+//
+//	private boolean isFunctionCall(StatementContext statement, Set<String> functionNames) {
+//		ExpressionContext expression = statement.expression();
+//		if (expression != null) {
+//			PrefixExpressionContext prefix = expression.prefixExpression();
+//			if (prefix.getChildCount() == 1) {
+//				if (prefix.getChild(0) instanceof FunctionCallExpressionContext) {
+//					FunctionCallExpressionContext functionCall = (FunctionCallExpressionContext) prefix.getChild(0);
+//					String functionName = functionCall.getChild(0).getText();
+//					if (functionNames.contains(functionName)) {
+//						return true;
+//					}
+//				}
+//			}
+//		}
+//		return false;
+//	}
+//
+//	private boolean containsTypeCast(ParseTree tree) {
+//
+//		if (tree.toString().equals("as")) {
+//			return true;
+//		}
+//
+//		int childCount = tree.getChildCount();
+//		boolean result = false;
+//
+//		for (int i = 0; result == false && i< childCount; i++){
+//			result = containsTypeCast(tree.getChild(i));
+//		}
+//
+//		return result;
+//	}
+//
+//	private String getFirstTypeIdentifier(ParseTree tree) {
+//
+//		if (tree instanceof Swift3Parser.STypeContext) {
+//			return tree.getText();
+//		}
+//
+//		int childCount = tree.getChildCount();
+//		String result = "";
+//
+//		for (int i = 0; result.equals("") && i< childCount; i++){
+//			result = getFirstTypeIdentifier(tree.getChild(i));
+//		}
+//
+//		return result;
+//	}
+//
+//	@Override
+//	public void enterThrowStatement(Swift3Parser.ThrowStatementContext ctx) {
+//		throwCounter++;
+//		//System.out.println("Throw Expression: "+ctx.expression().getText());
+//		printer.addToPrinting(MetricType.THROW, ListenerUtil.getContextStartLocation(ctx), ctx.expression().getText());
+//	}
+//
+//	@Override
+//	public void enterVariableDeclaration(Swift3Parser.VariableDeclarationContext ctx) {
+//
+//		if (ctx.patternInitializerList() != null && ctx.patternInitializerList().patternInitializer() != null){
+//			for (PatternInitializerContext child : ctx.patternInitializerList().patternInitializer()) {
+//				if (child.pattern().typeAnnotation() != null) {
+//					if (child.pattern().typeAnnotation().getText().startsWith(":")) {
+//						explicitVariableDeclarationsCounter++;
+//					} else {
+//						implicitVariableDeclarationsCounter++;
+//					}
+//				} else {
+//					implicitVariableDeclarationsCounter++;
+//				}
+//			}
+//		} else if (ctx.typeAnnotation() != null){
+//			if (ctx.typeAnnotation().getText().startsWith(":")) {
+//				explicitVariableDeclarationsCounter++;
+//			} else {
+//				implicitVariableDeclarationsCounter++;
+//			}
+//		} else {
+//			implicitVariableDeclarationsCounter++;
+//		}
+//	}
+//
+//	@Override public void enterProtocolInitializerDeclaration(Swift3Parser.ProtocolInitializerDeclarationContext ctx) {
+//		checkForThrowsAndRethrows(ctx);
+//	}
+//
+//	@Override public void enterInitializerDeclaration(Swift3Parser.InitializerDeclarationContext ctx) {
+//		checkForThrowsAndRethrows(ctx);
+//	}
+//
+//	@Override public void enterFunctionSignature(Swift3Parser.FunctionSignatureContext ctx) {
+//		checkForThrowsAndRethrows(ctx);
+//	}
+//
+//	private void checkForThrowsAndRethrows(ParserRuleContext ctx) {
+//
+//		String signature = ctx.getText();
+//
+//		if (ctx instanceof Swift3Parser.InitializerDeclarationContext){
+//			String body = ((Swift3Parser.InitializerDeclarationContext) ctx).initializerBody().getText();
+//			signature = signature.replace(body, "");
+//		}
+//
+//		if (signature.contains("rethrows")) {
+//			rethrowsCounter++;
+//			printer.addToPrinting(MetricType.RETHROWS, ListenerUtil.getContextStartLocation(ctx), signature);
+//		}
+//
+//		String auxSignature = signature.replaceAll("rethrows", "");
+//
+//		if (auxSignature.contains("throws")) {
+//
+//			Pattern pattern = Pattern.compile("throws");
+//			Matcher matcher = pattern.matcher(auxSignature);
+//
+//		    int pos = 0;
+//		    while (matcher.find(pos))
+//		    {
+//		    	pos = matcher.start() + 1;
+//
+//		    	throwsCounter++;
+//				printer.addToPrinting(MetricType.THROWS, ListenerUtil.getContextStartLocation(ctx), signature);
+//		    }
+//		}
+//	}
+//
+//	@Override
+//	public void enterConstantDeclaration(Swift3Parser.ConstantDeclarationContext ctx) {
+//
+//		if (ctx.patternInitializerList() != null && ctx.patternInitializerList().patternInitializer() != null){
+//			for (PatternInitializerContext child : ctx.patternInitializerList().patternInitializer()) {
+//				if (child.pattern().typeAnnotation() != null) {
+//					if (child.pattern().typeAnnotation().getText().startsWith(":")) {
+//						explicitConstantDeclarationsCounter++;
+//					} else {
+//						implicitConstantDeclarationsCounter++;
+//					}
+//				} else {
+//					implicitConstantDeclarationsCounter++;
+//				}
+//			}
+//		}
+//	}
 
 	private static void checkAndAdd(Map<String, Integer> map, String key){
 
@@ -450,7 +454,7 @@ public class MscrMetricsListener extends SwiftBaseListener {
 	 * @param ctx The ConditionClauseContext to be checked.
 	 * @return True if the ConditionClause contains the nil check, False otherwise.
 	 */
-	private static boolean containsNilCheck (ConditionClauseContext ctx) {
+	private static boolean containsNilCheck (ParserRuleContext ctx) {
 
 		String conditionClauseText = ctx.getText();
 
@@ -544,7 +548,6 @@ public class MscrMetricsListener extends SwiftBaseListener {
 		System.out.println("Normal types : "+ fixedMap.size());
 		System.out.println("Optional Types: "+ optionalTypeMap.size()); //OK
 		System.out.println("Implicit Unwrapped Types: "+ forcedTypeMap.size()); //OK
-
 	}
 
 

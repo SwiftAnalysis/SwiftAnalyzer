@@ -1,8 +1,11 @@
 /out/
+.metadata/
+.idea/
 
 # Eclipse Project
 bin/
 .settings
 .project
 .classpath
+.class
 target/

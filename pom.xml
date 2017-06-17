@@ -60,8 +60,13 @@
 	<!-- https://mvnrepository.com/artifact/org.antlr/antlr4-runtime -->
 	<dependency>
     	<groupId>org.antlr</groupId>
+    	<artifactId>antlr4</artifactId>
+    	<version>4.7</version>
+	</dependency>
+	<dependency>
+    	<groupId>org.antlr</groupId>
     	<artifactId>antlr4-runtime</artifactId>
-    	<version>4.5.3</version>
+    	<version>4.7</version>
 	</dependency>
   </dependencies>
 </project>
