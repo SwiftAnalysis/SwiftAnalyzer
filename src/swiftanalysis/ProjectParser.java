@@ -1,8 +1,8 @@
 package swiftanalysis;
 
 import org.antlr.v4.runtime.*;
-import swiftanalysis.generated.Swift3Lexer;
-import swiftanalysis.generated.Swift3Parser;
+import swiftanalysis.generated.SwiftLexer;
+import swiftanalysis.generated.SwiftParser;
 
 import java.io.File;
 import java.io.FileReader;
@@ -15,7 +15,7 @@ import java.util.stream.Stream;
  */
 public class ProjectParser {
 
-	private static int numberOfFilesBeforeClearingCache = 20;
+	private static int numberOfFilesBeforeClearingCache = 10;
     private static AtomicInteger numFiles = new AtomicInteger(0);
 
     /**
@@ -44,11 +44,11 @@ public class ProjectParser {
         } catch (IOException e) {
             System.err.println("Could not read " + file.getAbsolutePath());
         }
-        Swift3Parser parser = getSwiftParser(input);
+        SwiftParser parser = getSwiftParser(input);
         clearDFACache(parser);
         try {
         	System.out.println(file.getAbsolutePath());
-            return new AST(file, parser.top_level(), parser);
+            return new AST(file, parser.topLevel(), parser);
         } catch (ErrorListener.ParseError e) {
         	System.out.println("error: "+file.getAbsolutePath());
             System.out.println(e.getMsg());
@@ -62,12 +62,12 @@ public class ProjectParser {
      * @param input the input stream for the parser
      * @return the Swift Parser
      */
-    private static Swift3Parser getSwiftParser(CharStream input) {
-        Swift3Lexer lexer = new Swift3Lexer(input);
+    private static SwiftParser getSwiftParser(CharStream input) {
+        SwiftLexer lexer = new SwiftLexer(input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(new ErrorListener());
         CommonTokenStream tokens = new CommonTokenStream(lexer);
-        Swift3Parser parser = new Swift3Parser(tokens);
+        SwiftParser parser = new SwiftParser(tokens);
         parser.removeErrorListeners();
         parser.addErrorListener(new ErrorListener());
         return parser;
@@ -113,7 +113,7 @@ public class ProjectParser {
      *
      * @param parser current SwiftParser instance
      */
-    private static void clearDFACache(Swift3Parser parser) {
+    private static void clearDFACache(SwiftParser parser) {
         numFiles.incrementAndGet();
         if (numFiles.compareAndSet(numberOfFilesBeforeClearingCache, 0)) {
         	//System.out.println("cleared DFA");

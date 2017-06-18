@@ -1,5 +1,4 @@
 package swiftanalysis;
-
 import swiftanalysis.analyzers.Analyzer;
 import swiftanalysis.analyzers.MscrMetricsProjectAnalyzer;
 import swiftanalysis.output.Formatter;
@@ -42,5 +41,4 @@ public class SwiftAnalyzer {
         }
         analyzer.allProjectsDone();
     }
-
 }

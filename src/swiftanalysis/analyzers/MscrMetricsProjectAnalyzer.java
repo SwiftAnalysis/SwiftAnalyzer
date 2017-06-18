@@ -1,20 +1,20 @@
 package swiftanalysis.analyzers;
 
 import swiftanalysis.AST;
-import swiftanalysis.listeners.MscrMetricsListener;
+import swiftanalysis.listeners.OverallMetricsListener;
 import swiftanalysis.output.Printer;
 
 /**
- * Analyzes projects using the MscrMetricsListener that is created by Marcel Rebouças.
+ * Analyzes projects using the OverallMetricsListener that is created by Marcel Rebouças.
  */
 public class MscrMetricsProjectAnalyzer extends ListeningAnalyzer {
 
 	
     /**
-     * Creates a ListeningAnalyzer with Marcel's MscrMetricsListener.
+     * Creates a ListeningAnalyzer with Marcel's OverallMetricsListener.
      */
     public MscrMetricsProjectAnalyzer(Printer printer) {
-        super(new MscrMetricsListener(printer), printer);
+        super(new OverallMetricsListener(printer), printer);
     }
 
     /**
@@ -33,7 +33,7 @@ public class MscrMetricsProjectAnalyzer extends ListeningAnalyzer {
     @Override
     public void allProjectsDone() {
     	super.allProjectsDone();
-        MscrMetricsListener.printSummary();
+        OverallMetricsListener.printSummary();
     }
 
 }
