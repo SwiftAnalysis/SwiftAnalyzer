@@ -79,7 +79,6 @@ public class OverallMetricsListener extends SwiftBaseListener {
 		this.printer = printer;
 	}
 
-	/*
 	@Override
 	public void enterTryOperator(SwiftParser.TryOperatorContext ctx) {
 
